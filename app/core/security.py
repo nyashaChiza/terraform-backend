@@ -4,7 +4,7 @@ from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
-from core.config import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 
@@ -67,5 +67,32 @@ def decode_access_token(token: str) -> str:
         if subject is None:
             raise JWTError("Token missing subject")
         return subject
+    except JWTError:
+        raise
+
+def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
+    """
+    Creates a JWT refresh token
+    """
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
+    to_encode = {
+        "sub": subject,
+        "exp": expire,
+        "type": "refresh"
+    }
+    encoded_jwt = jwt.encode(to_encode, settings.REFRESH_SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+def decode_refresh_token(token: str) -> str:
+    """
+    Decodes a JWT refresh token and returns the subject
+    """
+    try:
+        payload = jwt.decode(token, settings.REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM])
+        subject: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        if subject is None or token_type != "refresh":
+            raise JWTError("Invalid refresh token")
+        return payload
     except JWTError:
         raise

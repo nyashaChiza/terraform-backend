@@ -4,7 +4,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.enums import Gender, ExperienceLevel
-from db.base import Base
+from app.db.base import Base
 
 
 class Profile(Base):

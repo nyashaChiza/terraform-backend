@@ -4,7 +4,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import  relationship
 from app.models.enums import GoalType, GoalStatus
 from datetime import datetime
-from db.base import Base
+from app.db.base import Base
 
 class Goal(Base):
     __tablename__ = "goals"
@@ -13,6 +13,8 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     type = Column(Enum(GoalType))
     target_value = Column(Float, nullable=True)
+    current_value = Column(Float, default=0.0)
+    description = Column(String, nullable=True)
     start_date = Column(DateTime)
     due_date = Column(DateTime)
     status = Column(Enum(GoalStatus), default=GoalStatus.Active)

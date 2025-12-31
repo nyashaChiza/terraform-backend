@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.session import engine
 from app.db.base import Base
+from app.api import (
+    auth
+    )
 
 
 # -------------------------------------------------
@@ -59,3 +62,10 @@ def root():
         "status": "running",
         "version": "1.0.0"
     }
+
+
+# -------------------------------------------------
+# API ROUTERS   
+app.include_router(auth.router, prefix="/api/auth") 
+
+# -------------------------------------------------

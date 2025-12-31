@@ -4,7 +4,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import  relationship
 from app.models.enums import MuscleGroup, StressLevel
 from datetime import datetime
-from db.base import Base
+from app.db.base import Base
 
 class Exercise(Base):
     __tablename__ = "exercises"

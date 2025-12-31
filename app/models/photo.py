@@ -4,7 +4,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import  relationship
 from app.models.enums import PhotoType
 from datetime import datetime
-from db.base import Base
+from app.db.base import Base
 
 class ProgressPhoto(Base):
     __tablename__ = "progress_photos"

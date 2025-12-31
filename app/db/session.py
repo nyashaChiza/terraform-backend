@@ -1,13 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
+from app.core.config import get_settings
+settings = get_settings()
 
 # -----------------------------
 # DATABASE URL CONFIGURATION
 # -----------------------------
 # Example PostgreSQL URL: postgresql+psycopg2://user:password@localhost:5432/gymtrack
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite3")
-
+DATABASE_URL = settings.DATABASE_URL
 # -----------------------------
 # ENGINE CREATION
 # -----------------------------
