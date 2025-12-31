@@ -13,8 +13,8 @@ class Settings():
     # -----------------------------
     # SECURITY
     # -----------------------------
-    SECRET_KEY: str = config("SECRET_KEY")
-    REFRESH_SECRET_KEY: str = config("REFRESH_SECRET_KEY")
+    SECRET_KEY: str = config("SECRET_KEY", default="super-secret-change-me")
+    REFRESH_SECRET_KEY: str = config("REFRESH_SECRET_KEY", default="another-super-secret-change-me")
     ACCESS_TOKEN_EXPIRE_MINUTES: float = config("ACCESS_TOKEN_EXPIRE_MINUTES", default=5000, cast=float)  # in minutes
     REFRESH_TOKEN_EXPIRE_DAYS: float = config("REFRESH_TOKEN_EXPIRE_DAYS", default=30, cast=float)  # in days
     ALGORITHM: str = "HS256"
@@ -22,7 +22,7 @@ class Settings():
     # -----------------------------
     # DATABASE
     # -----------------------------
-    DATABASE_URL: str = config("DATABASE_URL")
+    DATABASE_URL: str = config("DATABASE_URL", default="sqlite:///./db.sqlite3")
 
     #------------------------------
     # LOGGER
