@@ -6,7 +6,7 @@ import os
 # DATABASE URL CONFIGURATION
 # -----------------------------
 # Example PostgreSQL URL: postgresql+psycopg2://user:password@localhost:5432/gymtrack
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite3")
 
 # -----------------------------
 # ENGINE CREATION
