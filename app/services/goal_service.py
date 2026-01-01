@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from typing import List
-
+from app.core.config import Settings
 from app.models.goal import Goal
+from app.models.enums import GoalStatus
 
+settings = Settings()
 
 class GoalService:
     """
@@ -15,15 +17,35 @@ class GoalService:
         db: Session,
         *,
         user_id: int,
-        title: str,
+        type,
         description: str | None,
-        target_value: float
+        target_value: float | None,
+        start_date,
+        due_date,
+        starting_value: float | None = None
     ) -> Goal:
+
+        # Enforce single active goal
+        active_goal = (
+            db.query(Goal)
+            .filter(
+                Goal.user_id == user_id,
+                Goal.status == GoalStatus.Active
+            )
+            .first()
+        )
+        if active_goal:
+            raise ValueError("User already has an active goal")
+
         goal = Goal(
             user_id=user_id,
-            title=title,
+            type=type,
             description=description,
             target_value=target_value,
+            current_value=starting_value or 0.0,
+            start_date=start_date,
+            due_date=due_date,
+            status=GoalStatus.Active
         )
 
         db.add(goal)
@@ -32,7 +54,7 @@ class GoalService:
         return goal
 
     @staticmethod
-    def get_user_goals(db: Session, *, user_id: int) -> List[Goal]:
+    def get_user_goals(db: Session, user_id: int) -> List[Goal]:
         return (
             db.query(Goal)
             .filter(Goal.user_id == user_id)
@@ -43,15 +65,15 @@ class GoalService:
     @staticmethod
     def get_goal_by_id(
         db: Session,
-        *,
         goal_id: int,
         user_id: int
     ) -> Goal:
+
         goal = (
             db.query(Goal)
             .filter(
                 Goal.id == goal_id,
-                Goal.user_id == user_id,
+                Goal.user_id == user_id
             )
             .first()
         )
@@ -62,6 +84,30 @@ class GoalService:
         return goal
 
     @staticmethod
+    def update_goal(
+        db: Session,
+        goal_id: int,
+        user_id: int,
+        updates: dict
+    ) -> Goal:
+
+        goal = GoalService.get_goal_by_id(
+            db=db,
+            goal_id=goal_id,
+            user_id=user_id
+        )
+
+        if goal.status != GoalStatus.Active:
+            raise ValueError("Only active goals can be updated")
+
+        for field, value in updates.dict().items():
+            setattr(goal, field, value)
+
+        db.commit()
+        db.refresh(goal)
+        return goal
+
+    @staticmethod
     def update_progress(
         db: Session,
         *,
@@ -69,11 +115,15 @@ class GoalService:
         user_id: int,
         new_value: float
     ) -> Goal:
+
         goal = GoalService.get_goal_by_id(
             db=db,
             goal_id=goal_id,
             user_id=user_id
         )
+
+        if goal.status != GoalStatus.Active:
+            raise ValueError("Cannot update progress on inactive goal")
 
         if new_value < 0:
             raise ValueError("Progress value cannot be negative")
@@ -82,6 +132,32 @@ class GoalService:
         db.commit()
         db.refresh(goal)
         return goal
+
+    @staticmethod
+    def close_goal(
+        db: Session,
+        *,
+        goal_id: int,
+        user_id: int,
+        final_value: float
+    ) -> Goal:
+
+        goal = GoalService.get_goal_by_id(
+            db=db,
+            goal_id=goal_id,
+            user_id=user_id
+        )
+
+        if goal.status != GoalStatus.Active:
+            raise ValueError("Goal already closed")
+
+        goal.current_value = final_value
+        goal.status = GoalStatus.Completed
+
+        db.commit()
+        db.refresh(goal)
+        return goal
+
 
     @staticmethod
     def delete_goal(

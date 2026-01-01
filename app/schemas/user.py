@@ -8,7 +8,7 @@ PasswordStr = Annotated[
     str,
     Field(
         min_length=8,
-        max_length=128,
+        max_length=30,
         description="Plain password, hashed before persistence"
     )
 ]

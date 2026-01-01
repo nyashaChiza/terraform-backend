@@ -11,9 +11,11 @@ class ExperienceLevel(enum.Enum):
     Expert = "Expert"
 
 class GoalType(enum.Enum):
-    FatLoss = "FatLoss"
+    WeightLoss = "WeightLoss"
     MuscleGain = "MuscleGain"
-    Recomposition = "Recomposition"
+    Endurance = "Endurance"
+    Strength = "Strength"
+    Custom = "Custom"
 
 class GoalStatus(enum.Enum):
     Active = "Active"

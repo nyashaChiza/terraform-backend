@@ -1,19 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.db.session import get_db
+
 from app.models.user import User
-
-
 from app.models.profile import Profile
 from app.models.goal import Goal
-from app.models.session import *
+from app.models.session import * 
+from app.models.photo import ProgressPhoto 
 from app.models.exercise import Exercise
-from app.models.photo import ProgressPhoto
 
 
-from app.schemas.user import UserCreate, UserLogin, UserOut
 from app.core.security import (
     verify_password,
     hash_password,
@@ -22,10 +21,14 @@ from app.core.security import (
     decode_refresh_token
 )
 from app.core.config import get_settings
-settings = get_settings()
+from app.schemas.user import UserCreate, UserOut
 
+settings = get_settings()
 router = APIRouter(tags=["Auth"])
 
+# -------------------------------
+# Register
+# -------------------------------
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_in.email).first()
@@ -37,6 +40,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     user = User(
         email=user_in.email,
+        username=user_in.email,
         password=hash_password(user_in.password)
     )
 
@@ -46,11 +50,16 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     return user
 
+# -------------------------------
+# Login
+# -------------------------------
 @router.post("/login")
-def login(user_in: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
-
-    if not user or not verify_password(user_in.password, user.password):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -72,8 +81,11 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer"
     }
 
+# -------------------------------
+# Refresh
+# -------------------------------
 @router.post("/refresh")
-def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+def refresh_token(refresh_token: str = Form(...), db: Session = Depends(get_db)):
     payload = decode_refresh_token(refresh_token)
 
     user_id = payload.get("sub")
