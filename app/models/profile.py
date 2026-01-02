@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
+    Column, Integer, String, DateTime, ForeignKey, Enum, Date
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -14,6 +14,9 @@ class Profile(Base):
     first_name = Column(String(255))
     last_name = Column(String(255))
     gender = Column(Enum(Gender))
+    date_of_birth = Column(Date)
+    weight = Column(Integer)  # in kgs
+    height = Column(Integer)  # in centimeters
     phone_number = Column(String(255))
     experience_level = Column(Enum(ExperienceLevel))
     preferred_sessions_per_week = Column(Integer)

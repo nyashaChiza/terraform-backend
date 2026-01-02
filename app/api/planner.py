@@ -4,6 +4,7 @@ from typing import List, Dict
 
 from app.db.session import get_db
 from app.models.user import User
+from app.models.goal import Goal
 from app.models.exercise import Exercise
 from app.schemas.session import PlannedSessionOut
 from app.core.dependencies import get_current_user
@@ -32,20 +33,31 @@ def generate_new_plan(
         {
             "exercise_id": e.id,
             "name": e.name,
-            "muscle_group": e.muscle_group,
-            "default_sets": e.default_sets,
-            "default_reps": e.default_reps,
-            "rest_seconds": e.rest_seconds,
-            "notes": e.notes,
+            "primary_muscle": e.primary_muscle.value,
+            "stress_level": e.stress_level.value
         }
         for e in db.query(Exercise).all()
     ]
 
-    # Example: fetch current goal from user profile or service
-    current_goal: Dict = {
-        "goal_type": current_user.goals.last().type,
-        "target_value": current_user.goals.last().target_value,
+    latest_goal = (
+        db.query(Goal)
+        .filter(Goal.user_id == current_user.id)
+        .order_by(Goal.created.desc())
+        .first()
+    )
+
+    if not latest_goal:
+        raise HTTPException(status_code=404, detail="User has no goals")
+
+    current_goal = {
+        "goal_type": latest_goal.type.value,
+        # "description": latest_goal.description,
+        # "start_date": latest_goal.start_date.isoformat() if latest_goal.start_date else None,
+        "due_date": latest_goal.due_date.isoformat() if latest_goal.due_date else None,
+        # "start_value": latest_goal.current_value,
+        "target_value": latest_goal.target_value
     }
+
 
     try:
         planned_session = PlannerService.create_next_planned_session(

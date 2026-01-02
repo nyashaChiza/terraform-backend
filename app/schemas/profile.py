@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
@@ -9,6 +9,10 @@ class Gender(str, Enum):
     male = "Male"
     female = "Female"
 
+class ExperienceLevel(str, Enum):
+    Beginner = "Beginner"
+    Intermediate = "Intermediate"
+    Expert = "Expert"
 
 PhoneNumber = Annotated[
     str,
@@ -20,11 +24,32 @@ PhoneNumber = Annotated[
     )
 ]
 
+Height = Annotated[
+    int,
+    Field(
+        ge=100,
+        description="Height in centimeters"
+    )
+]
+
+
+Weight = Annotated[
+    int,
+    Field(
+        ge=30,
+        description="Weight in kilograms"
+    )
+]
 
 class ProfileBase(BaseModel):
     first_name: Annotated[str, Field(min_length=1, max_length=100)]
     last_name: Annotated[str, Field(min_length=1, max_length=100)]
     gender: Gender
+    height: Height
+    weight: Weight
+    date_of_birth: date
+    experience_level: ExperienceLevel
+    preferred_sessions_per_week: Annotated[int, Field(ge=1, le=5)]
     phone_number: Optional[PhoneNumber] = None
 
 

@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
+    Column, Integer, String, DateTime, Enum, JSON
 )
 from sqlalchemy.orm import  relationship
 from app.models.enums import MuscleGroup, StressLevel

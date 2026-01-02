@@ -20,3 +20,11 @@ class User(Base):
     planned_sessions = relationship("PlannedSession", back_populates="user")
     progress_photos = relationship("ProgressPhoto", back_populates="user")
 
+    @property
+    def age(self) -> int:
+        if self.profile and self.profile.date_of_birth:
+            today = datetime.utcnow().date()
+            dob = self.profile.date_of_birth
+            return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return 0
+

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from app.models.session import PlannedSession
 from app.models.user import User
 from app.models.session import SessionFeedback
-from app.engine.v1.ai_planner import generate_next_session
+from app.engine.v1.openai_planner import generate_next_session_open_ai
+from app.engine.v1.open_router_planner import generate_next_session_openrouter  
 from app.engine.v1.schemas import PlannedSessionAI
 
 
@@ -58,18 +59,20 @@ class PlannerService:
                     "energy_level": last_logged.energy_level,
                 }
 
+
         # Generate next session using AI
-        ai_plan: PlannedSessionAI = generate_next_session(
+        ai_plan: PlannedSessionAI = generate_next_session_openrouter(
+            is_first_session=len(previous_sessions) == 0,
+            previous_sessions_count=len(previous_sessions),
+            last_session_feedback=last_feedback,
+            previous_two_sessions=previous_two_sessions,
             user_profile={
                 "age": user.age,
-                "weight": user.weight,
-                "height": user.height,
-                "training_level": user.training_level,
+                "weight": user.profile.weight,
+                "height": user.profile.height,
+                "training_level": user.profile.experience_level,
             },
             goal=goal,
-            previous_sessions=[ps.plan_payload for ps in previous_sessions],
-            previous_two_sessions=previous_two_sessions,
-            last_session_feedback=last_feedback,
             exercise_catalog=exercise_catalog,
         )
 

@@ -6,10 +6,10 @@ from app.core.config import Settings
 from pydantic import ValidationError
 
 settings = Settings()
-client = OpenAI(api_key=settings.OPENAI_API_KEY, project=settings.APP_NAME)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
-def generate_next_session(
+def generate_next_session_open_ai(
     *,
     user_profile: dict,
     goal: dict,
@@ -42,11 +42,11 @@ def generate_next_session(
     # Call OpenAI API
     response = client.responses.create(
         model="gpt-4.1",
-        response_format={"type": "json"},
         input=prompt,
         temperature=0.4,
     )
-
+    settings.logger.info("AI response received for next session generation.")
+    settings.logger.debug(f"AI Response: {response}")
     try:
         # Parse AI JSON response
         content: dict = response.output_parsed
