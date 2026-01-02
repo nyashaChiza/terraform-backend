@@ -10,46 +10,68 @@ def build_prompt_lite(
     last_session_feedback: dict,
     exercise_catalog: list[dict],
 ) -> str:
-    # Minimal previous sessions info
     lite_sessions = [
         {
-            "session_index": s.get("session_index"),
             "exercise_ids": [e["exercise_id"] for e in s.get("exercises", [])]
         }
         for s in previous_two_sessions
     ]
 
-    # Minimal exercise catalog
     lite_exercises = [
-        {"exercise_id": e["exercise_id"], "name": e["name"], "primary_muscle": e["primary_muscle"]}
+        {
+            "exercise_id": e["exercise_id"],
+            "name": e["name"],
+            "muscle_group": e["primary_muscle"],
+        }
         for e in exercise_catalog
     ]
 
-    # Minimal last session feedback
     lite_feedback = {
         "effort_rating": last_session_feedback.get("effort_rating"),
         "energy_level": last_session_feedback.get("energy_level"),
+        "joint_pain": last_session_feedback.get("joint_pain", False),
         "high_soreness_muscles": [
             m for m, s in last_session_feedback.get("soreness_per_muscle", {}).items() if s >= 7
         ],
-        "joint_pain": last_session_feedback.get("joint_pain", False),
     }
 
     return (
-        f"You are a gym coach.\n"
-        f"Task: generate the NEXT workout session and give feedback on overall goal progress limit this to 60 characters.\n\n"
-        f"User Profile: {json.dumps(user_profile, separators=(',', ':'))}\n"
-        f"Goal: {json.dumps(goal, separators=(',', ':'))}\n"
-        f"Training Context: {{'is_first_session': {is_first_session}, 'previous_sessions_count': {previous_sessions_count}}}\n"
-        f"Previous Sessions (lite): {json.dumps(lite_sessions, separators=(',', ':'))}\n"
-        f"Last Session Feedback (lite): {json.dumps(lite_feedback, separators=(',', ':'))}\n"
-        f"Available Exercises (lite): {json.dumps(lite_exercises, separators=(',', ':'))}\n"
-        f"Rules:\n"
-        f"- Follow goal and training level\n"
-        f"- If is_first_session, start balanced full-body, conservative volume\n"
-        f"- Do NOT invent exercises\n"
-        f"- Avoid repeating identical workouts unless first session\n"
-        f"- Number of suggested exercises should NEVER exceed 6, sets 10-15, duration 60-90 min\n"
-        f"- Intensity: deload/progression/normal based on recovery and energy\n"
-        f"Output ONLY valid JSON matching the schema: summary(limit to 60 characters), goal_progress_feedback, estimated_duration_minutes, intensity, exercises (with exercise_id, name, primary_muscle, sets, reps, rest_seconds, notes)"
+        "You are a professional gym coach generating workout plans for a fitness app.\n\n"
+        "TASK:\n"
+        "- Generate the NEXT workout session\n"
+        "- Provide short feedback on goal progress (max 60 characters)\n\n"
+        f"USER_PROFILE: {json.dumps(user_profile, separators=(',', ':'))}\n"
+        f"GOAL: {json.dumps(goal, separators=(',', ':'))}\n"
+        f"TRAINING_CONTEXT: {{\"is_first_session\":{str(is_first_session).lower()},"
+        f"\"previous_sessions_count\":{previous_sessions_count}}}\n"
+        f"PREVIOUS_SESSIONS: {json.dumps(lite_sessions, separators=(',', ':'))}\n"
+        f"LAST_FEEDBACK: {json.dumps(lite_feedback, separators=(',', ':'))}\n"
+        f"AVAILABLE_EXERCISES: {json.dumps(lite_exercises, separators=(',', ':'))}\n\n"
+        "STRICT RULES (DO NOT BREAK):\n"
+        "- Output MUST be raw JSON, no markdown, no code blocks\n"
+        "- Use ONLY exercises from AVAILABLE_EXERCISES\n"
+        "- Field name MUST be 'muscle_group' (never 'primary_muscle')\n"
+        "- reps MUST be a single integer greater than 0 and less than 20 (e.g. 10). NEVER use ranges like 8-12\n"
+        "- Do NOT invent fields or rename fields\n"
+        "- Use 6 exercises exactly\n"
+        "- Total sets must be between 10 and 15\n"
+        "- Duration must be between 60 and 90 minutes\n\n"
+        "OUTPUT JSON SCHEMA (MUST MATCH EXACTLY):\n"
+        "{"
+        "\"summary\": \"string (<=80 chars)\","
+        "\"goal_progress_feedback\": \"string (<=80 chars)\","
+        "\"estimated_duration_minutes\": number,"
+        "\"intensity\": \"Deload|Normal|Progression\","
+        "\"exercises\":["
+        "{"
+        "\"exercise_id\":number,"
+        "\"name\":\"string\","
+        "\"muscle_group\":\"string\","
+        "\"sets\":number,"
+        "\"reps\":number,"
+        "\"rest_seconds\":number,"
+        "\"notes\":string|null"
+        "}"
+        "]"
+        "}\n"
     )

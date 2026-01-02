@@ -19,6 +19,7 @@ class Settings():
     REFRESH_TOKEN_EXPIRE_DAYS: float = config("REFRESH_TOKEN_EXPIRE_DAYS", default=30, cast=float)  # in days
     OPENAI_API_KEY: str = config("OPENAI_API_KEY", default="")
     OPENROUTER_API_KEY: str = config("OPENROUTER_API_KEY", default="")
+    GEMINI_API_KEY: str = config("GEMINI_API_KEY", default="")
     ALGORITHM: str = "HS256"
 
     # -----------------------------

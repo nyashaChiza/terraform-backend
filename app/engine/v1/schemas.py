@@ -13,8 +13,8 @@ class PlannedExercise(BaseModel):
 
 
 class PlannedSessionAI(BaseModel):
-    summary: str
-    goal_progress_feedback: str
+    summary: str | None = ""
+    goal_progress_feedback: str | None = ""
     estimated_duration_minutes: int = Field(gt=10, le=120)
     intensity: str  # deload | normal | push
     exercises: List[PlannedExercise]

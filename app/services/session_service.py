@@ -51,13 +51,17 @@ class SessionService:
     ) -> LoggedSession:
         logged = (
             db.query(LoggedSession)
-            .join(PlannedSession)
+            .join(
+                PlannedSession,
+                LoggedSession.planned_session_id == PlannedSession.id
+            )
             .filter(
                 LoggedSession.id == logged_session_id,
                 PlannedSession.user_id == user_id,
             )
             .first()
         )
+
 
         if not logged:
             raise NoResultFound("Logged session not found")

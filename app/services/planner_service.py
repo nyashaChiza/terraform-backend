@@ -1,10 +1,12 @@
+
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from app.models.session import PlannedSession
 from app.models.user import User
 from app.models.session import SessionFeedback
 from app.engine.v1.openai_planner import generate_next_session_open_ai
-from app.engine.v1.open_router_planner import generate_next_session_openrouter  
+from app.engine.v1.open_router_planner import generate_next_session_openrouter 
+from app.engine.v1.genai_planner import generate_next_session_genai 
 from app.engine.v1.schemas import PlannedSessionAI
 
 
@@ -21,6 +23,7 @@ class PlannerService:
         user: User,
         goal: Dict,
         exercise_catalog: List[Dict],
+        planned_date: Optional[str] = None,
     ) -> PlannedSession:
         """
         1. Fetch user's previous sessions and last session feedback
@@ -46,11 +49,15 @@ class PlannerService:
         if previous_sessions:
             last_logged = (
                 db.query(SessionFeedback)
-                .join(PlannedSession)
+                .join(
+                    PlannedSession,
+                    SessionFeedback.logged_session_id == PlannedSession.id
+                )
                 .filter(PlannedSession.user_id == user.id)
                 .order_by(SessionFeedback.created.desc())
                 .first()
             )
+
             if last_logged:
                 last_feedback = {
                     "soreness_per_muscle": last_logged.soreness_per_muscle or {},
@@ -61,27 +68,29 @@ class PlannerService:
 
 
         # Generate next session using AI
-        ai_plan: PlannedSessionAI = generate_next_session_openrouter(
-            is_first_session=len(previous_sessions) == 0,
-            previous_sessions_count=len(previous_sessions),
-            last_session_feedback=last_feedback,
-            previous_two_sessions=previous_two_sessions,
+        ai_plan: PlannedSessionAI = generate_next_session_genai(
             user_profile={
                 "age": user.age,
-                "weight": user.profile.weight,
-                "height": user.profile.height,
-                "training_level": user.profile.experience_level,
-            },
+                 "weight": user.profile.weight,
+                 "height": user.profile.height,
+                 "training_level": user.profile.experience_level,
+             },
             goal=goal,
-            exercise_catalog=exercise_catalog,
+            previous_sessions=previous_sessions,
+            previous_two_sessions=previous_two_sessions,
+            last_session_feedback=last_feedback,
+            exercise_catalog=exercise_catalog
         )
 
         # Persist the planned session
         planned = PlannedSession(
             user_id=user.id,
-            planned_date=None,  # optional: could auto-assign to today
+            planned_date=planned_date,  # optional: could auto-assign to today
             estimated_duration_minutes=ai_plan.estimated_duration_minutes,
             plan_payload=ai_plan.model_dump(),
+            summary=ai_plan.summary,
+            goal_progress_feedback=ai_plan.goal_progress_feedback,
+            intensity=ai_plan.intensity.capitalize()
         )
 
         db.add(planned)

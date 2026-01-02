@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
-
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
@@ -140,14 +139,15 @@ def add_feedback(
     current_user: User = Depends(get_current_user),
 ):
     try:
+
         return SessionService.add_feedback(
             db=db,
             logged_session_id=logged_session_id,
             user_id=current_user.id,
-            soreness_per_muscle=feedback_in.get("soreness_per_muscle"),
-            joint_pain=feedback_in["joint_pain"],
-            effort_rating=feedback_in["effort_rating"],
-            energy_level=feedback_in["energy_level"],
+            soreness_per_muscle=feedback_in.soreness_per_muscle,
+            joint_pain=feedback_in.joint_pain,
+            effort_rating=feedback_in.effort_rating,
+            energy_level=feedback_in.energy_level,
         )
     except NoResultFound:
         raise HTTPException(
