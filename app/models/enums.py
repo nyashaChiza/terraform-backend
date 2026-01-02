@@ -41,3 +41,7 @@ class PhotoType(enum.Enum):
     Progress = "Progress"
     After = "After"
 
+class IntensityLevel(enum.Enum):
+    Deload = "Deload"
+    Normal = "Normal"
+    Progression = "Progression"

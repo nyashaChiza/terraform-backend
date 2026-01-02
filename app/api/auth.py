@@ -6,9 +6,6 @@ from datetime import timedelta
 from app.db.session import get_db
 
 from app.models.user import User
-from app.models.profile import Profile
-from app.models.goal import Goal
-from app.models.session import * 
 from app.models.photo import ProgressPhoto 
 from app.models.exercise import Exercise
 

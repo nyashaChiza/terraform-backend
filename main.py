@@ -7,7 +7,9 @@ from app.db.base import Base
 from app.api import (
     auth,
     profiles,
-    goals
+    goals,
+    sessions,
+    planner
     )
 
 
@@ -71,5 +73,7 @@ def root():
 app.include_router(auth.router, prefix="/auth") 
 app.include_router(profiles.router, prefix="/api/profiles")
 app.include_router(goals.router, prefix="/api/goals")
+app.include_router(sessions.router, prefix="/api/sessions")
+app.include_router(planner.router, prefix="/api/planner")
 
 # -------------------------------------------------

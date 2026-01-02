@@ -16,6 +16,9 @@ WeightKg = Annotated[float, Field(ge=0, le=1000)]
 
 class PlannedSessionBase(BaseModel):
     planned_date: datetime
+    summary: str
+    goal_progress_feedback: str
+    intensity: Optional[str] = None
     estimated_duration_minutes: Optional[DurationMinutes] = None
     plan_payload: Optional[Dict] = None
 

@@ -17,6 +17,7 @@ class Settings():
     REFRESH_SECRET_KEY: str = config("REFRESH_SECRET_KEY", default="another-super-secret-change-me")
     ACCESS_TOKEN_EXPIRE_MINUTES: float = config("ACCESS_TOKEN_EXPIRE_MINUTES", default=5000, cast=float)  # in minutes
     REFRESH_TOKEN_EXPIRE_DAYS: float = config("REFRESH_TOKEN_EXPIRE_DAYS", default=30, cast=float)  # in days
+    OPENAI_API_KEY: str = config("OPENAI_API_KEY", default="")
     ALGORITHM: str = "HS256"
 
     # -----------------------------

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.models.session import (
     PlannedSession,
@@ -17,9 +17,56 @@ class SessionService:
     Planned → Logged → Completed → Feedback
     """
 
-    # ------------------------
+    # ========================
+    # Internal helpers
+    # ========================
+
+    @staticmethod
+    def _get_planned_session_for_user(
+        db: Session,
+        *,
+        planned_session_id: int,
+        user_id: int,
+    ) -> PlannedSession:
+        planned = (
+            db.query(PlannedSession)
+            .filter(
+                PlannedSession.id == planned_session_id,
+                PlannedSession.user_id == user_id,
+            )
+            .first()
+        )
+
+        if not planned:
+            raise NoResultFound("Planned session not found")
+
+        return planned
+
+    @staticmethod
+    def _get_logged_session_for_user(
+        db: Session,
+        *,
+        logged_session_id: int,
+        user_id: int,
+    ) -> LoggedSession:
+        logged = (
+            db.query(LoggedSession)
+            .join(PlannedSession)
+            .filter(
+                LoggedSession.id == logged_session_id,
+                PlannedSession.user_id == user_id,
+            )
+            .first()
+        )
+
+        if not logged:
+            raise NoResultFound("Logged session not found")
+
+        return logged
+
+    # ========================
     # Planned Sessions
-    # ------------------------
+    # ========================
 
     @staticmethod
     def create_planned_session(
@@ -27,8 +74,8 @@ class SessionService:
         *,
         user_id: int,
         planned_date: datetime,
-        estimated_duration_minutes: int | None,
-        plan_payload: Dict[str, Any] | None,
+        estimated_duration_minutes: Optional[int],
+        plan_payload: Optional[Dict[str, Any]],
     ) -> PlannedSession:
         planned = PlannedSession(
             user_id=user_id,
@@ -46,7 +93,7 @@ class SessionService:
     def get_user_planned_sessions(
         db: Session,
         *,
-        user_id: int
+        user_id: int,
     ) -> List[PlannedSession]:
         return (
             db.query(PlannedSession)
@@ -55,9 +102,9 @@ class SessionService:
             .all()
         )
 
-    # ------------------------
+    # ========================
     # Logged Sessions
-    # ------------------------
+    # ========================
 
     @staticmethod
     def log_session(
@@ -65,38 +112,29 @@ class SessionService:
         *,
         planned_session_id: int,
         user_id: int,
-        actual_date: datetime | None = None
+        actual_date: Optional[datetime] = None,
     ) -> LoggedSession:
-        planned = (
-            db.query(PlannedSession)
-            .filter(
-                PlannedSession.id == planned_session_id,
-                PlannedSession.user_id == user_id,
-            )
-            .first()
+        planned = SessionService._get_planned_session_for_user(
+            db,
+            planned_session_id=planned_session_id,
+            user_id=user_id,
         )
-
-        if not planned:
-            raise NoResultFound("Planned session not found")
-
-        # Prevent duplicate logs
-        existing = (
-            db.query(LoggedSession)
-            .filter(LoggedSession.planned_session_id == planned_session_id)
-            .first()
-        )
-
-        if existing:
-            raise ValueError("Session already logged")
 
         logged = LoggedSession(
-            planned_session_id=planned_session_id,
+            planned_session_id=planned.id,
             actual_date=actual_date or datetime.utcnow(),
             completed=False,
         )
 
         db.add(logged)
-        db.commit()
+
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            # UNIQUE constraint violation on planned_session_id
+            raise ValueError("Session already logged for this planned session")
+
         db.refresh(logged)
         return logged
 
@@ -105,29 +143,25 @@ class SessionService:
         db: Session,
         *,
         logged_session_id: int,
-        user_id: int
+        user_id: int,
     ) -> LoggedSession:
-        logged = (
-            db.query(LoggedSession)
-            .join(PlannedSession)
-            .filter(
-                LoggedSession.id == logged_session_id,
-                PlannedSession.user_id == user_id,
-            )
-            .first()
+        logged = SessionService._get_logged_session_for_user(
+            db,
+            logged_session_id=logged_session_id,
+            user_id=user_id,
         )
 
-        if not logged:
-            raise NoResultFound("Logged session not found")
+        if logged.completed:
+            return logged  # idempotent
 
         logged.completed = True
         db.commit()
         db.refresh(logged)
         return logged
 
-    # ------------------------
+    # ========================
     # Exercises
-    # ------------------------
+    # ========================
 
     @staticmethod
     def add_exercise_to_session(
@@ -138,24 +172,20 @@ class SessionService:
         exercise_id: int,
         sets: int,
         reps: int,
-        weight: float | None,
-        rest_seconds: int | None,
+        weight: Optional[float],
+        rest_seconds: Optional[int],
     ) -> SessionExercise:
-        logged = (
-            db.query(LoggedSession)
-            .join(PlannedSession)
-            .filter(
-                LoggedSession.id == logged_session_id,
-                PlannedSession.user_id == user_id,
-            )
-            .first()
+        logged = SessionService._get_logged_session_for_user(
+            db,
+            logged_session_id=logged_session_id,
+            user_id=user_id,
         )
 
-        if not logged:
-            raise NoResultFound("Logged session not found")
+        if logged.completed:
+            raise ValueError("Cannot add exercises to a completed session")
 
         exercise = SessionExercise(
-            logged_session_id=logged_session_id,
+            logged_session_id=logged.id,
             exercise_id=exercise_id,
             sets=sets,
             reps=reps,
@@ -168,9 +198,9 @@ class SessionService:
         db.refresh(exercise)
         return exercise
 
-    # ------------------------
+    # ========================
     # Feedback
-    # ------------------------
+    # ========================
 
     @staticmethod
     def add_feedback(
@@ -178,29 +208,25 @@ class SessionService:
         *,
         logged_session_id: int,
         user_id: int,
-        soreness_per_muscle: Dict[str, int] | None,
+        soreness_per_muscle: Optional[Dict[str, int]],
         joint_pain: bool,
         effort_rating: int,
         energy_level: int,
     ) -> SessionFeedback:
-        logged = (
-            db.query(LoggedSession)
-            .join(PlannedSession)
-            .filter(
-                LoggedSession.id == logged_session_id,
-                PlannedSession.user_id == user_id,
-            )
-            .first()
+        logged = SessionService._get_logged_session_for_user(
+            db,
+            logged_session_id=logged_session_id,
+            user_id=user_id,
         )
 
-        if not logged:
-            raise NoResultFound("Logged session not found")
+        if not logged.completed:
+            raise ValueError("Cannot add feedback to an incomplete session")
 
         if logged.feedback:
             raise ValueError("Feedback already exists for this session")
 
         feedback = SessionFeedback(
-            logged_session_id=logged_session_id,
+            logged_session_id=logged.id,
             soreness_per_muscle=soreness_per_muscle,
             joint_pain=joint_pain,
             effort_rating=effort_rating,
