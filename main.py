@@ -78,4 +78,3 @@ app.include_router(exercise.router, prefix="/api/exercises")
 app.include_router(planner.router, prefix="/api/planner")
 
 # -------------------------------------------------
-
