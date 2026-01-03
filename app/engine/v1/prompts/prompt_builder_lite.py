@@ -30,16 +30,14 @@ def build_prompt_lite(
         "effort_rating": last_session_feedback.get("effort_rating"),
         "energy_level": last_session_feedback.get("energy_level"),
         "joint_pain": last_session_feedback.get("joint_pain", False),
-        "high_soreness_muscles": [
-            m for m, s in last_session_feedback.get("soreness_per_muscle", {}).items() if s >= 7
-        ],
+        "soreness_per_muscle_out_of_5": last_session_feedback.get("soreness_per_muscle", {}),
     }
 
     return (
         "You are a professional gym coach generating workout plans for a fitness app.\n\n"
         "TASK:\n"
         "- Generate the NEXT workout session\n"
-        "- Provide short feedback on goal progress (max 60 characters)\n\n"
+        "- Provide short feedback on goal progress (max 90 characters)\n\n"
         f"USER_PROFILE: {json.dumps(user_profile, separators=(',', ':'))}\n"
         f"GOAL: {json.dumps(goal, separators=(',', ':'))}\n"
         f"TRAINING_CONTEXT: {{\"is_first_session\":{str(is_first_session).lower()},"
@@ -58,8 +56,8 @@ def build_prompt_lite(
         "- Duration must be between 60 and 90 minutes\n\n"
         "OUTPUT JSON SCHEMA (MUST MATCH EXACTLY):\n"
         "{"
-        "\"summary\": \"string (<=80 chars)\","
-        "\"goal_progress_feedback\": \"string (<=80 chars)\","
+        "\"summary\": \"string (<=90 chars)\","
+        "\"goal_progress_feedback\": \"string (<=90 chars)\","
         "\"estimated_duration_minutes\": number,"
         "\"intensity\": \"Deload|Normal|Progression\","
         "\"exercises\":["

@@ -1,8 +1,8 @@
 from typing import List, Dict
 from google import genai
 from google.genai import types
-from app.engine.v1.schemas import PlannedSessionAI
-from app.engine.v1.prompt_builder_lite import build_prompt_lite
+from app.engine.v1.schemas.schemas import PlannedSessionAI
+from app.engine.v1.prompts.prompt_builder_lite import build_prompt_lite
 from app.core.config import Settings
 from pydantic import ValidationError
 
@@ -58,6 +58,8 @@ def generate_next_session_genai(
         last_session_feedback=last_session_feedback,
         exercise_catalog=exercise_catalog,
     )
+    # settings.logger.info(prompt)
+    # input(f"Press Enter to continue...")
 
     # Call Gemini API
     response = client.models.generate_content(

@@ -1,7 +1,7 @@
 from typing import List, Dict
 from openai import OpenAI
-from app.engine.v1.schemas import PlannedSessionAI
-from app.engine.v1.prompt_builder import build_prompt
+from app.engine.v1.schemas.schemas import PlannedSessionAI
+from app.engine.v1.prompts.prompt_builder import build_prompt
 from app.core.config import Settings
 from pydantic import ValidationError
 

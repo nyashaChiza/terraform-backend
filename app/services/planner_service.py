@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from app.models.session import PlannedSession
 from app.models.user import User
 from app.models.session import SessionFeedback
-from app.engine.v1.openai_planner import generate_next_session_open_ai
-from app.engine.v1.open_router_planner import generate_next_session_openrouter 
-from app.engine.v1.genai_planner import generate_next_session_genai 
-from app.engine.v1.schemas import PlannedSessionAI
+from app.engine.v1.planners.openai_planner import generate_next_session_open_ai
+from app.engine.v1.planners.open_router_planner import generate_next_session_openrouter 
+from app.engine.v1.planners.genai_planner import generate_next_session_genai 
+from app.engine.v1.schemas.schemas import PlannedSessionAI
 
 
 class PlannerService:

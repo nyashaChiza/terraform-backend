@@ -53,11 +53,9 @@ def generate_new_plan(
 
     current_goal = {
         "goal_type": latest_goal.type.value,
-        # "description": latest_goal.description,
-        # "start_date": latest_goal.start_date.isoformat() if latest_goal.start_date else None,
+        "description": latest_goal.description,
         "due_date": latest_goal.due_date.isoformat() if latest_goal.due_date else None,
-        # "start_value": latest_goal.current_value,
-        "target_value": latest_goal.target_value
+        # "target_value": latest_goal.target_value
     }
 
     latest_planned = (

@@ -1,8 +1,8 @@
 from openrouter import OpenRouter
 from app.core.config import Settings
 import json
-from app.engine.v1.schemas import PlannedSessionAI
-from app.engine.v1.prompt_builder_lite import build_prompt_lite
+from app.engine.v1.schemas.schemas import PlannedSessionAI
+from app.engine.v1.prompts.prompt_builder_lite import build_prompt_lite
 
 settings = Settings()
 
