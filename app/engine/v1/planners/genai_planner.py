@@ -58,8 +58,7 @@ def generate_next_session_genai(
         last_session_feedback=last_session_feedback,
         exercise_catalog=exercise_catalog,
     )
-    # settings.logger.info(prompt)
-    # input(f"Press Enter to continue...")
+
 
     # Call Gemini API
     response = client.models.generate_content(
