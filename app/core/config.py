@@ -13,6 +13,7 @@ class Settings():
     # -----------------------------
     # SECURITY
     # -----------------------------
+    ADMIN_ACTION_KEY: str = config("ADMIN_ACTION_KEY", default="admin-secret-change-me")
     SECRET_KEY: str = config("SECRET_KEY", default="super-secret-change-me")
     REFRESH_SECRET_KEY: str = config("REFRESH_SECRET_KEY", default="another-super-secret-change-me")
     ACCESS_TOKEN_EXPIRE_MINUTES: float = config("ACCESS_TOKEN_EXPIRE_MINUTES", default=5000, cast=float)  # in minutes

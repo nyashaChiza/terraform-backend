@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
+from fastapi import Depends, HTTPException, Header, status
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
 from app.core.config import get_settings
+from app.models.user import User
 
 settings = get_settings()
 
@@ -96,3 +98,5 @@ def decode_refresh_token(token: str) -> str:
         return payload
     except JWTError:
         raise
+
+

@@ -1,7 +1,6 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.db.session import engine
 from app.db.base import Base
 from app.api import (
@@ -9,7 +8,9 @@ from app.api import (
     profiles,
     goals,
     sessions,
-    planner
+    planner,
+    exercise,
+    admin,
     )
 
 
@@ -69,11 +70,14 @@ def root():
 
 
 # -------------------------------------------------
-# API ROUTERS   
+# API ROUTERS  
+app.include_router(admin.router, prefix="/api/admin") 
 app.include_router(auth.router, prefix="/auth") 
 app.include_router(profiles.router, prefix="/api/profiles")
 app.include_router(goals.router, prefix="/api/goals")
 app.include_router(sessions.router, prefix="/api/sessions")
+app.include_router(exercise.router, prefix="/api/exercises")
 app.include_router(planner.router, prefix="/api/planner")
 
 # -------------------------------------------------
+

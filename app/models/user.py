@@ -14,7 +14,7 @@ class User(Base):
     password = Column(String(255), nullable=False)
     created = Column(DateTime, default=datetime.utcnow)
     updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    is_admin = Column(Boolean, default=False)
     profile = relationship("Profile", back_populates="user", uselist=False)
     goals = relationship("Goal", back_populates="user")
     planned_sessions = relationship("PlannedSession", back_populates="user")
