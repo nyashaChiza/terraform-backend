@@ -60,6 +60,7 @@ class PlannerService:
 
             if last_logged:
                 last_feedback = {
+                    "summary": last_logged.summary,
                     "soreness_per_muscle": last_logged.soreness_per_muscle or {},
                     "joint_pain": last_logged.joint_pain,
                     "effort_rating": last_logged.effort_rating,
@@ -84,6 +85,7 @@ class PlannerService:
 
         # Persist the planned session
         planned = PlannedSession(
+            title=ai_plan.title,
             user_id=user.id,
             planned_date=planned_date,  # optional: could auto-assign to today
             estimated_duration_minutes=ai_plan.estimated_duration_minutes,

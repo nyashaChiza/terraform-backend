@@ -15,6 +15,7 @@ WeightKg = Annotated[float, Field(ge=0, le=1000)]
 # ----------------------------
 
 class PlannedSessionBase(BaseModel):
+    title: str
     planned_date: datetime
     summary: str
     goal_progress_feedback: str

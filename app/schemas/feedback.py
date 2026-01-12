@@ -13,6 +13,7 @@ class SessionFeedbackCreate(BaseModel):
     joint_pain: bool
     effort_rating: Rating
     energy_level: Rating
+    summary: str
 
     @field_validator("soreness_per_muscle")
     @classmethod

@@ -27,6 +27,7 @@ def build_prompt_lite(
     ]
 
     lite_feedback = {
+        "summary": last_session_feedback.get("summary"),
         "effort_rating": last_session_feedback.get("effort_rating"),
         "energy_level": last_session_feedback.get("energy_level"),
         "joint_pain": last_session_feedback.get("joint_pain", False),
@@ -56,6 +57,7 @@ def build_prompt_lite(
         "- Duration must be between 60 and 90 minutes\n\n"
         "OUTPUT JSON SCHEMA (MUST MATCH EXACTLY):\n"
         "{"
+        "\"title\": \"string (<=40 chars)\","
         "\"summary\": \"string (<=90 chars)\","
         "\"goal_progress_feedback\": \"string (<=90 chars)\","
         "\"estimated_duration_minutes\": number,"
