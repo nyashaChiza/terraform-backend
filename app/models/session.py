@@ -16,6 +16,7 @@ class PlannedSession(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    title = Column(String(40), nullable=True)
     planned_date = Column(DateTime, nullable=False)
     estimated_duration_minutes = Column(Integer)
     plan_payload = Column(JSON)
@@ -117,6 +118,7 @@ class SessionFeedback(Base):
         nullable=False,
     )
     soreness_per_muscle = Column(JSON)
+    summary = Column(String, nullable=True)
     joint_pain = Column(Boolean, nullable=False)
     effort_rating = Column(Integer, nullable=False)
     energy_level = Column(Integer, nullable=False)
