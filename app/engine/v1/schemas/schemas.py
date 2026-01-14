@@ -13,6 +13,7 @@ class PlannedExercise(BaseModel):
 
 
 class PlannedSessionAI(BaseModel):
+    title: str = Field(max_length=80)
     summary: str | None = ""
     goal_progress_feedback: str | None = ""
     estimated_duration_minutes: int = Field(gt=10, le=120)

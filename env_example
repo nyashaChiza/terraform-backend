@@ -1,7 +1,7 @@
 APP_NAME=
 SECRET_KEY=
 REFRESH_SECRET_KEY=
-DATABASE_URL=
+DATABASE_URL=postgresql+psycopg2://postgres.arkdcunbupfznbymiaxm:FOOW5n2xqd92nQeE@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
 ENV=
 DEBUG=
 ACCESS_TOKEN_EXPIRE_MINUTES=

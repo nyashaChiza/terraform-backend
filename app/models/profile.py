@@ -25,3 +25,20 @@ class Profile(Base):
     updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
+
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "gender": self  .gender.value if self   .gender else None,
+            "date_of_birth": self.date_of_birth.isoformat() if self.date_of_birth else      None,
+            "weight": self.weight,
+            "height": self.height,
+            "phone_number": self.phone_number,
+            "experience_level": self.experience_level.value if self.experience_level else None,
+            "preferred_sessions_per_week": self.preferred_sessions_per_week,
+            "user_id": self.user_id,
+            "created": self.created.isoformat() if self.created else None,
+            "updated": self.updated.isoformat() if self.updated else None
+        }

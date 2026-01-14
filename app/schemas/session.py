@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional, Dict
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field, field_validator
+from app.schemas.feedback import SessionFeedbackOut
 
 
 PositiveInt = Annotated[int, Field(gt=0)]
@@ -83,6 +84,21 @@ class SessionExerciseCreate(BaseModel):
 class SessionExerciseOut(SessionExerciseCreate):
     id: int
     logged_session_id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class CompletedSessionOut(BaseModel):
+    id: int
+    planned_session_id: int
+    actual_date: Optional[datetime]
+    completed: bool
+    created: datetime
+    updated: datetime
+    exercises: list[SessionExerciseOut] = []
+    feedback: Optional[SessionFeedbackOut] = None
 
     model_config = {
         "from_attributes": True

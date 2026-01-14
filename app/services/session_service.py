@@ -106,6 +106,23 @@ class SessionService:
             .all()
         )
 
+    @staticmethod
+    def get_user_completed_sessions(
+        db: Session,
+        *,
+        user_id: int,
+    ) -> List[LoggedSession]:
+        return (
+            db.query(LoggedSession)
+            .join(PlannedSession, LoggedSession.planned_session_id == PlannedSession.id)
+            .filter(
+                PlannedSession.user_id == user_id,
+                LoggedSession.completed == True,
+            )
+            .order_by(LoggedSession.actual_date.desc())
+            .all()
+        )
+
     # ========================
     # Logged Sessions
     # ========================

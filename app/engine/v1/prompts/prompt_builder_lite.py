@@ -26,6 +26,7 @@ def build_prompt_lite(
         for e in exercise_catalog
     ]
 
+    # 
     lite_feedback = {
         "summary": last_session_feedback.get("summary"),
         "effort_rating": last_session_feedback.get("effort_rating"),

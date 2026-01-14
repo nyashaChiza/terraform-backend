@@ -5,13 +5,14 @@ from app.engine.v1.schemas.schemas import PlannedSessionAI
 from app.engine.v1.prompts.prompt_builder_lite import build_prompt_lite
 from app.core.config import Settings
 from pydantic import ValidationError
+import json
+import re
+
 
 settings = Settings()
 # Only run this block for Gemini Developer API
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-import json
-import re
 
 def extract_json_from_gemini(response) -> dict:
     try:

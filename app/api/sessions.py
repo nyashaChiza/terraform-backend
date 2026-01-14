@@ -12,6 +12,7 @@ from app.schemas.session import (
     LoggedSessionOut,
     SessionExerciseCreate,
     SessionExerciseOut,
+    CompletedSessionOut,
 )
 from app.schemas.feedback import SessionFeedbackCreate
 
@@ -46,6 +47,20 @@ def list_planned_sessions(
     current_user: User = Depends(get_current_user),
 ):
     return SessionService.get_user_planned_sessions(
+        db=db,
+        user_id=current_user.id,
+    )
+
+
+@router.get(
+    "/completed",
+    response_model=list[CompletedSessionOut],
+)
+def list_completed_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return SessionService.get_user_completed_sessions(
         db=db,
         user_id=current_user.id,
     )
@@ -100,6 +115,7 @@ def complete_logged_session(
             detail="Logged session not found",
         )
 
+
 @router.post(
     "/{logged_session_id}/exercises",
     response_model=SessionExerciseOut,
@@ -146,6 +162,7 @@ def add_feedback(
             user_id=current_user.id,
             soreness_per_muscle=feedback_in.soreness_per_muscle,
             joint_pain=feedback_in.joint_pain,
+            summary=feedback_in.summary,
             effort_rating=feedback_in.effort_rating,
             energy_level=feedback_in.energy_level,
         )
