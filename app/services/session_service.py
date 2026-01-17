@@ -82,6 +82,19 @@ class SessionService:
 
         return q.order_by(SessionModel.created.desc()).all()
 
+    @staticmethod
+    def get_session_by_id(
+        db: Session,
+        *,
+        session_id: int,
+        user_id: int,
+    ) -> SessionModel:
+        return SessionService._get_session_for_user(
+            db,
+            session_id=session_id,
+            user_id=user_id,
+        )
+
     # ========================
     # Lifecycle transitions
     # ========================

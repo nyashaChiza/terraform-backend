@@ -3,6 +3,7 @@ from typing import Optional, Dict
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field, field_validator
 from app.schemas.feedback import SessionFeedbackOut
+from app.models.enums import SessionStatus
 
 
 PositiveInt = Annotated[int, Field(gt=0)]
@@ -93,6 +94,32 @@ class CompletedSessionOut(BaseModel):
     planned_session_id: int
     actual_date: Optional[datetime]
     completed: bool
+    created: datetime
+    updated: datetime
+    exercises: list[SessionExerciseOut] = []
+    feedback: Optional[SessionFeedbackOut] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+# ----------------------------
+# Session Details
+# ----------------------------
+
+class SessionDetailsOut(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    status: SessionStatus
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    estimated_duration_minutes: Optional[DurationMinutes]
+    actual_duration_minutes: Optional[int]
+    intensity: Optional[str]
+    plan_payload: Optional[Dict] = None
+    summary: Optional[str]
+    goal_progress_feedback: Optional[str]
     created: datetime
     updated: datetime
     exercises: list[SessionExerciseOut] = []

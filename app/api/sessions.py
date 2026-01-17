@@ -14,6 +14,7 @@ from app.schemas.session import (
     SessionExerciseCreate,
     SessionExerciseOut,
     CompletedSessionOut,
+    SessionDetailsOut,
 )
 from app.schemas.feedback import SessionFeedbackCreate
 
@@ -70,6 +71,27 @@ def list_completed_sessions(
         user_id=current_user.id,
         status=SessionStatus.COMPLETED,
     )
+
+@router.get(
+    "/{session_id}",
+    response_model=SessionDetailsOut,
+)
+def get_session_details(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return SessionService.get_session_by_id(
+            db=db,
+            session_id=session_id,
+            user_id=current_user.id,
+        )
+    except NoResultFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
 
 @router.post(
     "/{session_id}/start",
