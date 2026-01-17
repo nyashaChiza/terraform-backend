@@ -40,6 +40,7 @@ class PlannedSessionCreate(PlannedSessionBase):
 class PlannedSessionOut(PlannedSessionBase):
     id: int
     user_id: int
+    status: SessionStatus
     created: datetime
     updated: datetime
 
