@@ -91,9 +91,9 @@ class SessionExerciseOut(SessionExerciseCreate):
 
 class CompletedSessionOut(BaseModel):
     id: int
-    planned_session_id: int
-    actual_date: Optional[datetime]
-    completed: bool
+    session_id: int
+    start_date: Optional[datetime]
+    completed_date: Optional[datetime]
     created: datetime
     updated: datetime
     exercises: list[SessionExerciseOut] = []

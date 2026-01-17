@@ -66,7 +66,7 @@ def get_latest_planned_session(
 
 @router.get(
     "/completed",
-    response_model=list[CompletedSessionOut],
+    response_model=list[PlannedSessionOut],
 )
 def list_completed_sessions(
     db: Session = Depends(get_db),
