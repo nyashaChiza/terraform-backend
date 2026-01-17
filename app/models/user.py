@@ -17,7 +17,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     profile = relationship("Profile", back_populates="user", uselist=False)
     goals = relationship("Goal", back_populates="user")
-    planned_sessions = relationship("PlannedSession", back_populates="user")
+    sessions = relationship("Session", back_populates="user")
     progress_photos = relationship("ProgressPhoto", back_populates="user")
 
     @property

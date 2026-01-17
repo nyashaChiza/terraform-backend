@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.enums import SessionStatus
 
 from app.schemas.session import (
     PlannedSessionCreate,
@@ -20,36 +21,40 @@ from app.services.session_service import SessionService
 
 router = APIRouter(tags=["Sessions"])
 
-@router.post(
-    "/planned",
-    response_model=PlannedSessionOut,
-    status_code=status.HTTP_201_CREATED,
+@router.get(
+    "",
+    response_model=list[PlannedSessionOut],
 )
-def create_planned_session(
-    session_in: PlannedSessionCreate,
+def list_sessions_by_status(
+    status_filter: SessionStatus = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return SessionService.create_planned_session(
+    return SessionService.get_user_sessions(
         db=db,
         user_id=current_user.id,
-        planned_date=session_in.planned_date,
-        estimated_duration_minutes=session_in.estimated_duration_minutes,
-        plan_payload=session_in.plan_payload,
+        status=status_filter,
     )
 
 @router.get(
-    "/planned",
-    response_model=list[PlannedSessionOut],
+    "/planned/latest",
+    response_model=PlannedSessionOut,
 )
-def list_planned_sessions(
+def get_latest_planned_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return SessionService.get_user_planned_sessions(
+    sessions = SessionService.get_user_sessions(
         db=db,
         user_id=current_user.id,
+        status=SessionStatus.PLANNED,
     )
+    if not sessions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No planned sessions found",
+        )
+    return sessions[0]  # Already sorted by created desc in service
 
 
 @router.get(
@@ -60,32 +65,31 @@ def list_completed_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return SessionService.get_user_completed_sessions(
+    return SessionService.get_user_sessions(
         db=db,
         user_id=current_user.id,
+        status=SessionStatus.COMPLETED,
     )
 
 @router.post(
-    "/log",
+    "/{session_id}/start",
     response_model=LoggedSessionOut,
-    status_code=status.HTTP_201_CREATED,
 )
-def log_session(
-    session_in: LoggedSessionCreate,
+def start_session(
+    session_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        return SessionService.log_session(
+        return SessionService.start_session(
             db=db,
-            planned_session_id=session_in.planned_session_id,
+            session_id=session_id,
             user_id=current_user.id,
-            actual_date=session_in.actual_date,
         )
     except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Planned session not found",
+            detail="Session not found",
         )
     except ValueError as e:
         raise HTTPException(
@@ -95,34 +99,34 @@ def log_session(
 
 
 @router.post(
-    "/{logged_session_id}/complete",
+    "/{session_id}/complete",
     response_model=LoggedSessionOut,
 )
 def complete_logged_session(
-    logged_session_id: int,
+    session_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     try:
         return SessionService.complete_session(
             db=db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=current_user.id,
         )
     except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Logged session not found",
+            detail="Logged/Started session not found",
         )
 
 
 @router.post(
-    "/{logged_session_id}/exercises",
+    "/{session_id}/exercises",
     response_model=SessionExerciseOut,
     status_code=status.HTTP_201_CREATED,
 )
 def add_exercise(
-    logged_session_id: int,
+    session_id: int,
     exercise_in: SessionExerciseCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -130,7 +134,7 @@ def add_exercise(
     try:
         return SessionService.add_exercise_to_session(
             db=db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=current_user.id,
             exercise_id=exercise_in.exercise_id,
             sets=exercise_in.sets,
@@ -145,11 +149,11 @@ def add_exercise(
         )
 
 @router.post(
-    "/{logged_session_id}/feedback",
+    "/{session_id}/feedback",
     status_code=status.HTTP_201_CREATED,
 )
 def add_feedback(
-    logged_session_id: int,
+    session_id: int,
     feedback_in: SessionFeedbackCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -158,7 +162,7 @@ def add_feedback(
 
         return SessionService.add_feedback(
             db=db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=current_user.id,
             soreness_per_muscle=feedback_in.soreness_per_muscle,
             joint_pain=feedback_in.joint_pain,

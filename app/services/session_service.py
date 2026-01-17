@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.exc import NoResultFound
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+from app.models.enums import SessionStatus
 from app.models.session import (
-    PlannedSession,
-    LoggedSession,
+    Session as SessionModel,
     SessionExercise,
     SessionFeedback,
 )
@@ -14,7 +14,7 @@ from app.models.session import (
 class SessionService:
     """
     Handles workout session lifecycle:
-    Planned → Logged → Completed → Feedback
+    PLANNED → STARTED → COMPLETED → FEEDBACK
     """
 
     # ========================
@@ -22,173 +22,126 @@ class SessionService:
     # ========================
 
     @staticmethod
-    def _get_planned_session_for_user(
+    def _get_session_for_user(
         db: Session,
         *,
-        planned_session_id: int,
+        session_id: int,
         user_id: int,
-    ) -> PlannedSession:
-        planned = (
-            db.query(PlannedSession)
+    ) -> SessionModel:
+        session = (
+            db.query(SessionModel)
             .filter(
-                PlannedSession.id == planned_session_id,
-                PlannedSession.user_id == user_id,
+                SessionModel.id == session_id,
+                SessionModel.user_id == user_id,
             )
             .first()
         )
 
-        if not planned:
-            raise NoResultFound("Planned session not found")
+        if not session:
+            raise NoResultFound("Session not found")
 
-        return planned
-
-    @staticmethod
-    def _get_logged_session_for_user(
-        db: Session,
-        *,
-        logged_session_id: int,
-        user_id: int,
-    ) -> LoggedSession:
-        logged = (
-            db.query(LoggedSession)
-            .join(
-                PlannedSession,
-                LoggedSession.planned_session_id == PlannedSession.id
-            )
-            .filter(
-                LoggedSession.id == logged_session_id,
-                PlannedSession.user_id == user_id,
-            )
-            .first()
-        )
-
-
-        if not logged:
-            raise NoResultFound("Logged session not found")
-
-        return logged
+        return session
 
     # ========================
-    # Planned Sessions
+    # Session creation & queries
     # ========================
 
     @staticmethod
-    def create_planned_session(
+    def create_session(
         db: Session,
         *,
         user_id: int,
-        planned_date: datetime,
+        title: Optional[str],
         estimated_duration_minutes: Optional[int],
         plan_payload: Optional[Dict[str, Any]],
-    ) -> PlannedSession:
-        planned = PlannedSession(
+    ) -> SessionModel:
+        session = SessionModel(
             user_id=user_id,
-            planned_date=planned_date,
+            title=title,
             estimated_duration_minutes=estimated_duration_minutes,
             plan_payload=plan_payload,
+            status=SessionStatus.PLANNED,
         )
 
-        db.add(planned)
+        db.add(session)
         db.commit()
-        db.refresh(planned)
-        return planned
+        db.refresh(session)
+        return session
 
     @staticmethod
-    def get_user_planned_sessions(
+    def get_user_sessions(
         db: Session,
         *,
         user_id: int,
-    ) -> List[PlannedSession]:
-        return (
-            db.query(PlannedSession)
-            .filter(PlannedSession.user_id == user_id)
-            .order_by(PlannedSession.planned_date.desc())
-            .all()
-        )
+        status: Optional[SessionStatus] = None,
+    ) -> List[SessionModel]:
+        q = db.query(SessionModel).filter(SessionModel.user_id == user_id)
 
-    @staticmethod
-    def get_user_completed_sessions(
-        db: Session,
-        *,
-        user_id: int,
-    ) -> List[LoggedSession]:
-        return (
-            db.query(LoggedSession)
-            .join(PlannedSession, LoggedSession.planned_session_id == PlannedSession.id)
-            .filter(
-                PlannedSession.user_id == user_id,
-                LoggedSession.completed == True,
-            )
-            .order_by(LoggedSession.actual_date.desc())
-            .all()
-        )
+        if status:
+            q = q.filter(SessionModel.status == status)
+
+        return q.order_by(SessionModel.created.desc()).all()
 
     # ========================
-    # Logged Sessions
+    # Lifecycle transitions
     # ========================
 
     @staticmethod
-    def log_session(
+    def start_session(
         db: Session,
         *,
-        planned_session_id: int,
+        session_id: int,
         user_id: int,
-        actual_date: Optional[datetime] = None,
-    ) -> LoggedSession:
-        planned = SessionService._get_planned_session_for_user(
+    ) -> SessionModel:
+        session = SessionService._get_session_for_user(
             db,
-            planned_session_id=planned_session_id,
+            session_id=session_id,
             user_id=user_id,
         )
 
-        logged = LoggedSession(
-            planned_session_id=planned.id,
-            actual_date=actual_date or datetime.utcnow(),
-            completed=False,
-        )
+        if session.status != SessionStatus.PLANNED:
+            raise ValueError("Only planned sessions can be started")
 
-        db.add(logged)
-
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            # UNIQUE constraint violation on planned_session_id
-            raise ValueError("Session already logged for this planned session")
-
-        db.refresh(logged)
-        return logged
+        session.status = SessionStatus.STARTED
+        session.started_at = datetime.utcnow()
+        db.commit()
+        db.refresh(session)
+        return session
 
     @staticmethod
     def complete_session(
         db: Session,
         *,
-        logged_session_id: int,
+        session_id: int,
         user_id: int,
-    ) -> LoggedSession:
-        logged = SessionService._get_logged_session_for_user(
+    ) -> SessionModel:
+        session = SessionService._get_session_for_user(
             db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=user_id,
         )
 
-        if logged.completed:
-            return logged  # idempotent
+        if session.status == SessionStatus.COMPLETED:
+            return session  # idempotent
 
-        logged.completed = True
+        if session.status != SessionStatus.STARTED:
+            raise ValueError("Session must be started before completing")
+
+        session.status = SessionStatus.COMPLETED
+        session.completed_at = datetime.utcnow()
         db.commit()
-        db.refresh(logged)
-        return logged
+        db.refresh(session)
+        return session
 
     # ========================
     # Exercises
     # ========================
 
     @staticmethod
-    def add_exercise_to_session(
+    def add_exercise(
         db: Session,
         *,
-        logged_session_id: int,
+        session_id: int,
         user_id: int,
         exercise_id: int,
         sets: int,
@@ -196,17 +149,17 @@ class SessionService:
         weight: Optional[float],
         rest_seconds: Optional[int],
     ) -> SessionExercise:
-        logged = SessionService._get_logged_session_for_user(
+        session = SessionService._get_session_for_user(
             db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=user_id,
         )
 
-        if logged.completed:
-            raise ValueError("Cannot add exercises to a completed session")
+        if session.status == SessionStatus.COMPLETED:
+            raise ValueError("Cannot modify a completed session")
 
         exercise = SessionExercise(
-            logged_session_id=logged.id,
+            session_id=session.id,
             exercise_id=exercise_id,
             sets=sets,
             reps=reps,
@@ -227,31 +180,33 @@ class SessionService:
     def add_feedback(
         db: Session,
         *,
-        logged_session_id: int,
+        session_id: int,
         user_id: int,
         soreness_per_muscle: Optional[Dict[str, int]],
         joint_pain: bool,
         effort_rating: int,
         energy_level: int,
+        summary: Optional[str] = None,
     ) -> SessionFeedback:
-        logged = SessionService._get_logged_session_for_user(
+        session = SessionService._get_session_for_user(
             db,
-            logged_session_id=logged_session_id,
+            session_id=session_id,
             user_id=user_id,
         )
 
-        if not logged.completed:
-            raise ValueError("Cannot add feedback to an incomplete session")
+        if session.status != SessionStatus.COMPLETED:
+            raise ValueError("Feedback can only be added to completed sessions")
 
-        if logged.feedback:
+        if session.feedback:
             raise ValueError("Feedback already exists for this session")
 
         feedback = SessionFeedback(
-            logged_session_id=logged.id,
+            session_id=session.id,
             soreness_per_muscle=soreness_per_muscle,
             joint_pain=joint_pain,
             effort_rating=effort_rating,
             energy_level=energy_level,
+            summary=summary,
         )
 
         db.add(feedback)

@@ -30,7 +30,7 @@ class SessionFeedbackCreate(BaseModel):
 
 class SessionFeedbackOut(SessionFeedbackCreate):
     id: int
-    logged_session_id: int
+    session_id: int
     created: datetime
     updated: datetime
 

@@ -4,24 +4,23 @@ from typing import List, Dict
 from app.db.session import get_db
 from app.models.user import User
 from app.models.goal import Goal
-from app.models.session import PlannedSession, LoggedSession
+from app.models.session import Session as SessionModel
 from app.models.exercise import Exercise
 from app.schemas.session import PlannedSessionOut
 from app.core.dependencies import get_current_user
 from app.services.planner_service import PlannerService
-from app.schemas.planner import GeneratePlanRequest
+
 
 router = APIRouter(tags=["Planner"])
 
 
-@router.post(
+@router.get(
     "/generate",
     response_model=PlannedSessionOut,
     status_code=status.HTTP_201_CREATED,
     summary="Generate a new planned session for the user"
 )
 def generate_new_plan(
-    payload: GeneratePlanRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -59,15 +58,15 @@ def generate_new_plan(
     }
 
     latest_planned = (
-        db.query(PlannedSession)
-        .filter(PlannedSession.user_id == current_user.id)
-        .order_by(PlannedSession.created.desc())
+        db.query(SessionModel)
+        .filter(SessionModel.user_id == current_user.id)
+        .order_by(SessionModel.created.desc())
         .first()
     )
     if latest_planned:
         is_logged = (
-            db.query(LoggedSession)
-            .filter(LoggedSession.planned_session_id == latest_planned.id)
+            db.query(SessionModel)
+            .filter(SessionModel.id == latest_planned.id)
             .first()
         )
 
@@ -84,7 +83,6 @@ def generate_new_plan(
             user=current_user,
             goal=current_goal,
             exercise_catalog=exercise_catalog,
-            planned_date=payload.planned_date,
         )
     except Exception as e:
         raise HTTPException(

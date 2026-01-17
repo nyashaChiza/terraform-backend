@@ -45,3 +45,9 @@ class IntensityLevel(enum.Enum):
     Deload = "Deload"
     Normal = "Normal"
     Progression = "Progression"
+
+
+class SessionStatus(str, enum.Enum):
+    PLANNED = "PLANNED"
+    STARTED = "STARTED"
+    COMPLETED = "COMPLETED"

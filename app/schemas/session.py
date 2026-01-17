@@ -17,12 +17,12 @@ WeightKg = Annotated[float, Field(ge=0, le=1000)]
 
 class PlannedSessionBase(BaseModel):
     title: str
-    planned_date: datetime
     summary: str
     goal_progress_feedback: str
     intensity: Optional[str] = None
     estimated_duration_minutes: Optional[DurationMinutes] = None
     plan_payload: Optional[Dict] = None
+    created: datetime
 
     @field_validator("plan_payload")
     @classmethod
@@ -52,15 +52,13 @@ class PlannedSessionOut(PlannedSessionBase):
 # ----------------------------
 
 class LoggedSessionCreate(BaseModel):
-    planned_session_id: PositiveInt
-    actual_date: Optional[datetime] = None
-
+    session_id: PositiveInt
+    
 
 class LoggedSessionOut(BaseModel):
     id: int
-    planned_session_id: int
-    actual_date: Optional[datetime]
-    completed: bool
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
     created: datetime
     updated: datetime
 
@@ -83,7 +81,7 @@ class SessionExerciseCreate(BaseModel):
 
 class SessionExerciseOut(SessionExerciseCreate):
     id: int
-    logged_session_id: int
+    session_id: int
 
     model_config = {
         "from_attributes": True

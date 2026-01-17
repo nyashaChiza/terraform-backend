@@ -1,7 +1,7 @@
 
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from app.models.session import PlannedSession
+from app.models.session import  Session as SessionModel
 from app.models.user import User
 from app.models.session import SessionFeedback
 from app.engine.v1.planners.openai_planner import generate_next_session_open_ai
@@ -23,8 +23,7 @@ class PlannerService:
         user: User,
         goal: Dict,
         exercise_catalog: List[Dict],
-        planned_date: Optional[str] = None,
-    ) -> PlannedSession:
+    ) -> SessionModel:
         """
         1. Fetch user's previous sessions and last session feedback
         2. Call the AI to generate next session plan
@@ -33,9 +32,9 @@ class PlannerService:
 
         # Fetch previous sessions (most recent first)
         previous_sessions = (
-            db.query(PlannedSession)
-            .filter(PlannedSession.user_id == user.id)
-            .order_by(PlannedSession.planned_date.desc())
+            db.query(SessionModel)
+            .filter(SessionModel.user_id == user.id)
+            .order_by(SessionModel.completed_at.desc())
             .all()
         )
 
@@ -50,10 +49,10 @@ class PlannerService:
             last_logged = (
                 db.query(SessionFeedback)
                 .join(
-                    PlannedSession,
-                    SessionFeedback.logged_session_id == PlannedSession.id
+                    SessionModel,
+                    SessionFeedback.session_id == SessionModel.id
                 )
-                .filter(PlannedSession.user_id == user.id)
+                .filter(SessionModel.user_id == user.id)
                 .order_by(SessionFeedback.created.desc())
                 .first()
             )
@@ -85,10 +84,9 @@ class PlannerService:
         )
 
         # Persist the planned session
-        planned = PlannedSession(
+        planned = SessionModel(
             title=ai_plan.title,
             user_id=user.id,
-            planned_date=planned_date,  # optional: could auto-assign to today
             estimated_duration_minutes=ai_plan.estimated_duration_minutes,
             plan_payload=ai_plan.model_dump(),
             summary=ai_plan.summary,
