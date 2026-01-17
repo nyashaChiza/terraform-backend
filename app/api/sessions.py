@@ -38,7 +38,7 @@ def list_sessions_by_status(
     )
 
 @router.get(
-    "/planned/latest",
+    "/latest",
     response_model=PlannedSessionOut,
 )
 def get_latest_planned_session(
@@ -49,6 +49,12 @@ def get_latest_planned_session(
         db=db,
         user_id=current_user.id,
         status=SessionStatus.PLANNED,
+    )
+    if not sessions:
+        sessions = SessionService.get_user_sessions(
+        db=db,
+        user_id=current_user.id,
+        status=SessionStatus.STARTED,
     )
     if not sessions:
         raise HTTPException(
