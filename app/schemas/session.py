@@ -41,6 +41,9 @@ class PlannedSessionOut(PlannedSessionBase):
     id: int
     user_id: int
     status: SessionStatus
+    feedback: Optional[SessionFeedbackOut] = None
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
     created: datetime
     updated: datetime
 
