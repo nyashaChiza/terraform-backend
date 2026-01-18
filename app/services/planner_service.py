@@ -59,7 +59,6 @@ class PlannerService:
 
             if last_logged:
                 last_feedback = {
-                    "title": last_logged.title,
                     "summary": last_logged.summary,
                     "soreness_per_muscle": last_logged.soreness_per_muscle or {},
                     "joint_pain": last_logged.joint_pain,
