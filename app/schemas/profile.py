@@ -62,6 +62,11 @@ class ProfileUpdate(BaseModel):
     last_name: Optional[Annotated[str, Field(min_length=1, max_length=100)]] = None
     gender: Optional[Gender] = None
     phone_number: Optional[PhoneNumber] = None
+    height: Optional[Height] = None
+    weight: Optional[Weight] = None
+    date_of_birth: Optional[date] = None
+    experience_level: Optional[ExperienceLevel] = None
+    preferred_sessions_per_week: Optional[Annotated[int, Field(ge=1, le=7)]] = None
 
 
 class ProfileOut(ProfileBase):

@@ -26,20 +26,21 @@ def build_prompt_lite(
         for e in exercise_catalog
     ]
 
-    # 
     lite_feedback = {
         "summary": last_session_feedback.get("summary"),
         "effort_rating": last_session_feedback.get("effort_rating"),
         "energy_level": last_session_feedback.get("energy_level"),
         "joint_pain": last_session_feedback.get("joint_pain", False),
         "soreness_per_muscle_out_of_5": last_session_feedback.get("soreness_per_muscle", {}),
+        "weights_used": last_session_feedback.get("weights_used", []),
     }
 
     return (
         "You are a professional gym coach generating workout plans for a fitness app.\n\n"
         "TASK:\n"
         "- Generate the NEXT workout session\n"
-        "- Provide short feedback on goal progress (max 90 characters)\n\n"
+        "- Provide short feedback on goal progress (max 90 characters)\n"
+        "- Suggest a weight for each exercise based on last session weights and progressive overload principles\n\n"
         f"USER_PROFILE: {json.dumps(user_profile, separators=(',', ':'))}\n"
         f"GOAL: {json.dumps(goal, separators=(',', ':'))}\n"
         f"TRAINING_CONTEXT: {{\"is_first_session\":{str(is_first_session).lower()},"
@@ -55,14 +56,18 @@ def build_prompt_lite(
         "- Do NOT invent fields or rename fields\n"
         "- Use 6 exercises exactly\n"
         "- Total sets must be between 10 and 15\n"
-        "- Duration must be between 60 and 90 minutes\n\n"
+        "- Duration must be between 60 and 90 minutes\n"
+        "- suggested_weight_kg MUST always be a number (never null). Use 0 for bodyweight exercises\n"
+        "- Weight progression: if effort_rating <= 3 increase by 2.5-5kg; if effort_rating == 4 keep same; if effort_rating == 5 decrease by 2.5-5kg\n"
+        "- For first session or exercises with no prior weight, estimate from user weight, height, and training_level\n"
+        "- notes must be a short form tip (max 60 chars). Do NOT mention weight in notes — weight goes in suggested_weight_kg only\n\n"
         "OUTPUT JSON SCHEMA (MUST MATCH EXACTLY):\n"
         "{"
-        "\"title\": \"string (<=40 chars)\","
-        "\"summary\": \"string (<=90 chars)\","
-        "\"goal_progress_feedback\": \"string (<=90 chars)\","
-        "\"estimated_duration_minutes\": number,"
-        "\"intensity\": \"Deload|Normal|Progression\","
+        "\"title\":\"string (<=40 chars)\","
+        "\"summary\":\"string (<=90 chars)\","
+        "\"goal_progress_feedback\":\"string (<=90 chars)\","
+        "\"estimated_duration_minutes\":number,"
+        "\"intensity\":\"Deload|Normal|Progression\","
         "\"exercises\":["
         "{"
         "\"exercise_id\":number,"
@@ -71,7 +76,8 @@ def build_prompt_lite(
         "\"sets\":number,"
         "\"reps\":number,"
         "\"rest_seconds\":number,"
-        "\"notes\":string|null"
+        "\"notes\":\"string or null\","
+        "\"suggested_weight_kg\":number"
         "}"
         "]"
         "}\n"

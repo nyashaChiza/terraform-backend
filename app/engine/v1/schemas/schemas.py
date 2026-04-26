@@ -10,6 +10,7 @@ class PlannedExercise(BaseModel):
     reps: int = Field(gt=0, le=50)
     rest_seconds: int = Field(ge=0, le=300)
     notes: Optional[str] = None
+    suggested_weight_kg: Optional[float] = None
 
 
 class PlannedSessionAI(BaseModel):

@@ -128,6 +128,7 @@ class SessionFeedback(Base):
     effort_rating = Column(Integer, nullable=False)
     energy_level = Column(Integer, nullable=False)
     summary = Column(String)
+    weights_used = Column(JSON)  # [{"exercise_id": 1, "name": "Bench Press", "weight_kg": 60.0}]
 
     created = Column(DateTime, default=datetime.utcnow)
     updated = Column(

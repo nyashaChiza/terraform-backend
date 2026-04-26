@@ -197,6 +197,7 @@ def add_feedback(
             summary=feedback_in.summary,
             effort_rating=feedback_in.effort_rating,
             energy_level=feedback_in.energy_level,
+            weights_used=feedback_in.weights_used,
         )
     except NoResultFound:
         raise HTTPException(

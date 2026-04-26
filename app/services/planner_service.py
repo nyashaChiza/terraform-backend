@@ -64,6 +64,7 @@ class PlannerService:
                     "joint_pain": last_logged.joint_pain,
                     "effort_rating": last_logged.effort_rating,
                     "energy_level": last_logged.energy_level,
+                    "weights_used": last_logged.weights_used or [],
                 }
 
 

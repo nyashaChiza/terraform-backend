@@ -200,6 +200,7 @@ class SessionService:
         effort_rating: int,
         energy_level: int,
         summary: Optional[str] = None,
+        weights_used: Optional[list] = None,
     ) -> SessionFeedback:
         session = SessionService._get_session_for_user(
             db,
@@ -220,6 +221,7 @@ class SessionService:
             effort_rating=effort_rating,
             energy_level=energy_level,
             summary=summary,
+            weights_used=[w.model_dump() if hasattr(w, 'model_dump') else w for w in weights_used] if weights_used else None,
         )
 
         db.add(feedback)
