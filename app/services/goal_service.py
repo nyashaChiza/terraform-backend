@@ -37,12 +37,14 @@ class GoalService:
         if active_goal:
             raise ValueError("User already has an active goal")
 
+        initial = starting_value or 0.0
         goal = Goal(
             user_id=user_id,
             type=type,
             description=description,
             target_value=target_value,
-            current_value=starting_value or 0.0,
+            starting_value=initial,
+            current_value=initial,
             start_date=start_date,
             due_date=due_date,
             status=GoalStatus.Active
@@ -88,7 +90,7 @@ class GoalService:
         db: Session,
         goal_id: int,
         user_id: int,
-        updates: dict
+        updates,  # GoalUpdate Pydantic model
     ) -> Goal:
 
         goal = GoalService.get_goal_by_id(
@@ -100,8 +102,11 @@ class GoalService:
         if goal.status != GoalStatus.Active:
             raise ValueError("Only active goals can be updated")
 
-        for field, value in updates.dict().items():
-            setattr(goal, field, value)
+        # Only apply fields that were explicitly sent; skip unknown model attributes
+        allowed = {c.key for c in Goal.__table__.columns}
+        for field, value in updates.model_dump(exclude_unset=True).items():
+            if field in allowed:
+                setattr(goal, field, value)
 
         db.commit()
         db.refresh(goal)

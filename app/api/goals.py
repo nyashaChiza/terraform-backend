@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import NoResultFound
 from typing import List
 
 from app.db.session import get_db
 from app.models.user import User
-from app.models.goal import Goal
-from app.models.photo import ProgressPhoto
-from app.schemas.goal import GoalCreate, GoalOut, GoalUpdate
+from app.schemas.goal import GoalCreate, GoalOut, GoalUpdate, GoalProgressUpdate
 from app.services.goal_service import GoalService
 from app.services.profile_service import ProfileService
 from app.core.dependencies import get_current_user
@@ -63,39 +62,60 @@ def update_goal(
     current_user: User = Depends(get_current_user)
 ):
     service = GoalService()
-    goal = service.get_goal_by_id(db, goal_id, current_user.id)
-    if not goal:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Goal not found"
-        )
-    updated_goal = service.update_goal(db, goal.id, current_user.id, goal_in)
+    try:
+        updated_goal = service.update_goal(db, goal_id, current_user.id, goal_in)
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     return updated_goal
 
-@router.post("/{goal_id}/close", response_model=GoalOut)
-def close_goal(
+
+@router.patch("/{goal_id}/progress", response_model=GoalOut)
+def update_goal_progress(
     goal_id: int,
-    before_photo: UploadFile = File(...),
-    after_photo: UploadFile = File(...),
+    progress_in: GoalProgressUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     service = GoalService()
-    goal = service.get_by_id(goal_id)
-    if not goal or goal.user_id != current_user.id:
+    try:
+        updated = service.update_progress(
+            db=db,
+            goal_id=goal_id,
+            user_id=current_user.id,
+            new_value=progress_in.current_value,
+        )
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    return updated
+
+@router.post("/{goal_id}/close", response_model=GoalOut)
+def close_goal(
+    goal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = GoalService()
+    try:
+        goal = service.get_goal_by_id(db, goal_id, current_user.id)
+    except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-
-    # handle photos
-    photo_before = ProgressPhoto(user_id=current_user.id, goal_id=goal.id, photo_file=before_photo.filename, is_before=True)
-    photo_after = ProgressPhoto(user_id=current_user.id, goal_id=goal.id, photo_file=after_photo.filename, is_before=False)
-    db.add_all([photo_before, photo_after])
-    
-    # mark goal as closed
-    service.close_goal(goal)
-    db.commit()
-    db.refresh(goal)
-
-    return goal
+    try:
+        updated = service.close_goal(
+            db=db,
+            goal_id=goal_id,
+            user_id=current_user.id,
+            final_value=goal.current_value,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
+    return updated

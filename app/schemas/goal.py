@@ -80,6 +80,7 @@ class GoalOut(GoalBase):
     id: int
     user_id: int
     status: GoalStatus
+    starting_value: float
     current_value: float
     start_date: datetime
     due_date: datetime
@@ -96,7 +97,6 @@ class GoalUpdate(BaseModel):
     type: GoalType
     description: Optional[Annotated[str, Field(max_length=500)]] = None
     target_value: Optional[PositiveFloat] = None
-    start_value: Optional[PositiveFloat] = None
     start_date: Optional[date] = None
     due_date: Optional[date] = None
 

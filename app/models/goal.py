@@ -13,6 +13,7 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     type = Column(Enum(GoalType))
     target_value = Column(Float, nullable=True)
+    starting_value = Column(Float, default=0.0)
     current_value = Column(Float, default=0.0)
     description = Column(String, nullable=True)
     start_date = Column(DateTime)
