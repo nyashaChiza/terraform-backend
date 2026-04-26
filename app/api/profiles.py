@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.schemas.profile import ProfileCreate, ProfileUpdate, ProfileOut
 from app.models.profile import Profile
 from app.services.profile_service import ProfileService
+from app.services.progress_service import auto_update_goal_progress
 from app.core.dependencies import get_current_user
 from app.models.user import User
 
@@ -56,4 +57,9 @@ def update_profile(
             detail="Profile not found"
         )
     updated_profile = service.update(profile, updates)
+
+    # If weight changed, auto-update any active WeightLoss goal
+    if updates.weight is not None:
+        auto_update_goal_progress(db, user_id=current_user.id)
+
     return updated_profile

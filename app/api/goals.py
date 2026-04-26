@@ -28,15 +28,22 @@ def create_goal(
         )
 
     service = GoalService()
-    goal = service.create_goal(db=db, 
-                               user_id=current_user.id,
-                                type=goal_in.type,
-                                description=goal_in.description,
-                                target_value=goal_in.target_value, 
-                                start_date=goal_in.start_date, 
-                                due_date=goal_in.due_date,
-                                starting_value=goal_in.starting_value
-                                )
+    try:
+        goal = service.create_goal(
+            db=db,
+            user_id=current_user.id,
+            type=goal_in.type,
+            description=goal_in.description,
+            target_value=goal_in.target_value,
+            start_date=goal_in.start_date,
+            due_date=goal_in.due_date,
+            starting_value=goal_in.starting_value,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
     return goal
 
 

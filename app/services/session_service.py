@@ -9,6 +9,7 @@ from app.models.session import (
     SessionExercise,
     SessionFeedback,
 )
+from app.services.progress_service import auto_update_goal_progress
 
 
 class SessionService:
@@ -227,4 +228,12 @@ class SessionService:
         db.add(feedback)
         db.commit()
         db.refresh(feedback)
+
+        # Auto-update goal progress whenever feedback is submitted
+        auto_update_goal_progress(
+            db,
+            user_id=session.user_id,
+            weights_used=weights_used if isinstance(weights_used, list) else None,
+        )
+
         return feedback
