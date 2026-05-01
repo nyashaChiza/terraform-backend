@@ -160,7 +160,7 @@ def add_exercise(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        return SessionService.add_exercise_to_session(
+        return SessionService.add_exercise(
             db=db,
             session_id=session_id,
             user_id=current_user.id,

@@ -9,8 +9,8 @@ Rating = Annotated[int, Field(ge=1, le=5)]
 
 
 class ExerciseWeight(BaseModel):
-    exercise_id: int
-    name: str
+    exercise_id: Optional[int] = None   # Optional: AI exercises always have it, but be lenient
+    name: str = "Unknown"               # Default so missing name never causes 422
     weight_kg: float = Field(ge=0, le=500)
 
 
@@ -19,23 +19,29 @@ class SessionFeedbackCreate(BaseModel):
     joint_pain: bool
     effort_rating: Rating
     energy_level: Rating
-    summary: str
+    summary: Optional[str] = None       # UI labels this "optional" — match the intent
     weights_used: Optional[List[ExerciseWeight]] = None
 
     @field_validator("soreness_per_muscle")
     @classmethod
-    def validate_muscle_keys(cls, v):
+    def sanitize_muscle_keys(cls, v):
+        """Strip whitespace from muscle names and drop any that are empty after stripping.
+        This is defensive: the AI may occasionally produce padded or empty muscle groups.
+        """
         if v is None:
             return v
-        for muscle in v.keys():
-            if not muscle.strip():
-                raise ValueError("Muscle names cannot be empty")
-        return v
+        return {k.strip(): score for k, score in v.items() if k.strip()}
 
 
-class SessionFeedbackOut(SessionFeedbackCreate):
+class SessionFeedbackOut(BaseModel):
     id: int
     session_id: int
+    soreness_per_muscle: Optional[Dict[str, SorenessScore]] = None
+    joint_pain: Optional[bool] = None
+    effort_rating: Rating
+    energy_level: Rating
+    summary: Optional[str] = None
+    weights_used: Optional[List[ExerciseWeight]] = None
     created: datetime
     updated: datetime
 
