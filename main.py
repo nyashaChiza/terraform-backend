@@ -1,6 +1,11 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from app.db.session import engine
 from app.db.base import Base
 from app.api import (
@@ -14,6 +19,12 @@ from app.api import (
     )
 
 # -------------------------------------------------
+# RATE LIMITER
+# -------------------------------------------------
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+
+# -------------------------------------------------
 # APP INITIALIZATION
 # -------------------------------------------------
 
@@ -22,6 +33,10 @@ app = FastAPI(
     version="1.0.0",
     description="Backend API for Terraform intelligent training app"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # -------------------------------------------------
 # CORS (Expo / Mobile Friendly)
@@ -68,9 +83,9 @@ def root():
     }
 
 # -------------------------------------------------
-# API ROUTERS  
-app.include_router(admin.router, prefix="/api/admin") 
-app.include_router(auth.router, prefix="/auth") 
+# API ROUTERS
+app.include_router(admin.router, prefix="/api/admin")
+app.include_router(auth.router, prefix="/auth")
 app.include_router(profiles.router, prefix="/api/profiles")
 app.include_router(goals.router, prefix="/api/goals")
 app.include_router(sessions.router, prefix="/api/sessions")

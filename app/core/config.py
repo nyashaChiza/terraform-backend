@@ -8,7 +8,7 @@ class Settings():
     # -----------------------------
     APP_NAME: str = config("APP_NAME", default="Terraform")
     ENV: str = config("ENV", default="development")
-    DEBUG: bool = config("DEBUG", default=True, cast=bool)
+    DEBUG: bool = config("DEBUG", default=False, cast=bool)
 
     # -----------------------------
     # SECURITY
@@ -26,7 +26,7 @@ class Settings():
     # -----------------------------
     # DATABASE
     # -----------------------------
-    DATABASE_URL: str = config("sqlite:///./db.sqlite3", default="sqlite:///./db.sqlite3") if DEBUG else config("DATABASE_URL", default="sqlite:///./db.sqlite3")
+    DATABASE_URL: str = config("DATABASE_URL", default="sqlite:///./db.sqlite3")
 
     #------------------------------
     # LOGGER

@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.base import Base
 
 class User(Base):
@@ -12,8 +12,8 @@ class User(Base):
     username = Column(String(255), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    created = Column(DateTime, default=datetime.utcnow)
-    updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_admin = Column(Boolean, default=False)
     profile = relationship("Profile", back_populates="user", uselist=False)
     goals = relationship("Goal", back_populates="user")
@@ -23,7 +23,7 @@ class User(Base):
     @property
     def age(self) -> int:
         if self.profile and self.profile.date_of_birth:
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
             dob = self.profile.date_of_birth
             return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
         return 0

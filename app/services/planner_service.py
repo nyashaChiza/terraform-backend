@@ -30,17 +30,18 @@ class PlannerService:
         3. Persist the planned session in the DB
         """
 
-        # Fetch previous sessions (most recent first)
+        # Fetch previous sessions (most recent 2 only)
         previous_sessions = (
             db.query(SessionModel)
             .filter(SessionModel.user_id == user.id)
             .order_by(SessionModel.completed_at.desc())
+            .limit(2)
             .all()
         )
 
-        # Take last two sessions for context
+        # Build payload list for AI context
         previous_two_sessions = [
-            ps.plan_payload for ps in previous_sessions[:2]
+            ps.plan_payload for ps in previous_sessions
         ]
 
         # Fetch feedback from last logged session (if any)

@@ -12,9 +12,11 @@ DATABASE_URL = settings.DATABASE_URL
 # ENGINE CREATION
 # -----------------------------
 # For PostgreSQL, replace the URL with the actual connection string
+_is_sqlite = DATABASE_URL.startswith("sqlite")
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    **({"pool_pre_ping": True} if not _is_sqlite else {}),
 )
 
 # -----------------------------

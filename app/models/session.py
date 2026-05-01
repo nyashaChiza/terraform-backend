@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.base import Base
 from app.models.enums import IntensityLevel, SessionStatus
 
@@ -43,11 +43,11 @@ class Session(Base):
     summary = Column(String)
     goal_progress_feedback = Column(String)
 
-    created = Column(DateTime, default=datetime.utcnow)
+    created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     user = relationship("User", back_populates="sessions")
@@ -102,9 +102,6 @@ class SessionExercise(Base):
     )
 
 
-from sqlalchemy import UniqueConstraint
-
-
 class SessionFeedback(Base):
     __tablename__ = "session_feedbacks"
 
@@ -130,11 +127,11 @@ class SessionFeedback(Base):
     summary = Column(String)
     weights_used = Column(JSON)  # [{"exercise_id": 1, "name": "Bench Press", "weight_kg": 60.0}]
 
-    created = Column(DateTime, default=datetime.utcnow)
+    created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     session = relationship(

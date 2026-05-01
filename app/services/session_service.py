@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import NoResultFound
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -76,7 +76,14 @@ class SessionService:
         user_id: int,
         status: Optional[SessionStatus] = None,
     ) -> List[SessionModel]:
-        q = db.query(SessionModel).filter(SessionModel.user_id == user_id)
+        q = (
+            db.query(SessionModel)
+            .options(
+                selectinload(SessionModel.exercises),
+                selectinload(SessionModel.feedback),
+            )
+            .filter(SessionModel.user_id == user_id)
+        )
 
         if status:
             q = q.filter(SessionModel.status == status)

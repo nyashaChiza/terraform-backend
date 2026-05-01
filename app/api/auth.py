@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.db.session import get_db
 
 from app.models.user import User
-from app.models.photo import ProgressPhoto 
+from app.models.photo import ProgressPhoto
 from app.models.exercise import Exercise
 
 
@@ -22,12 +24,14 @@ from app.schemas.user import UserCreate, UserOut
 
 settings = get_settings()
 router = APIRouter(tags=["Auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 # -------------------------------
 # Register
 # -------------------------------
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_in.email).first()
     if existing_user:
         raise HTTPException(
@@ -51,7 +55,9 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 # Login
 # -------------------------------
 @router.post("/login")
+@limiter.limit("20/minute")
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
@@ -82,7 +88,8 @@ def login(
 # Refresh
 # -------------------------------
 @router.post("/refresh")
-def refresh_token(refresh_token: str = Form(...), db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def refresh_token(request: Request, refresh_token: str = Form(...), db: Session = Depends(get_db)):
     payload = decode_refresh_token(refresh_token)
 
     user_id = payload.get("sub")
@@ -92,7 +99,15 @@ def refresh_token(refresh_token: str = Form(...), db: Session = Depends(get_db))
             detail="Invalid refresh token"
         )
 
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    user = db.query(User).filter(User.id == user_id_int).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -104,7 +119,13 @@ def refresh_token(refresh_token: str = Form(...), db: Session = Depends(get_db))
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
+    new_refresh_token = create_refresh_token(
+        subject=str(user.id),
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+
     return {
         "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }

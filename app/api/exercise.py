@@ -50,6 +50,8 @@ def create(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return create_exercise(db, payload)
 
 
@@ -60,6 +62,8 @@ def update(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     exercise = get_exercise(db, exercise_id)
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
@@ -73,6 +77,8 @@ def delete(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     exercise = get_exercise(db, exercise_id)
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")

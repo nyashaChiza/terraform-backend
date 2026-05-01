@@ -27,9 +27,18 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    try:
+        user_id = int(user_identifier)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user = (
         db.query(User)
-        .filter(User.id == int(user_identifier))
+        .filter(User.id == user_id)
         .first()
     )
 

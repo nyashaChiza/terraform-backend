@@ -6,6 +6,7 @@ from app.models.user import User
 from app.models.goal import Goal
 from app.models.session import Session as SessionModel
 from app.models.exercise import Exercise
+from app.models.enums import SessionStatus
 from app.schemas.session import PlannedSessionOut
 from app.core.dependencies import get_current_user
 from app.services.planner_service import PlannerService
@@ -63,18 +64,11 @@ def generate_new_plan(
         .order_by(SessionModel.created.desc())
         .first()
     )
-    if latest_planned:
-        is_logged = (
-            db.query(SessionModel)
-            .filter(SessionModel.id == latest_planned.id)
-            .first()
+    if latest_planned and latest_planned.status in (SessionStatus.PLANNED, SessionStatus.STARTED):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You must complete and log your current planned session before generating a new one."
         )
-
-        if not is_logged:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You must complete and log your current planned session before generating a new one."
-            )
 
 
     try:

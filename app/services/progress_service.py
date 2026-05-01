@@ -75,6 +75,7 @@ def auto_update_goal_progress(
             .filter(
                 SessionModel.user_id == user_id,
                 SessionModel.status == SessionStatus.COMPLETED,
+                SessionModel.completed_at.isnot(None),
                 SessionModel.completed_at >= goal.start_date,
             )
             .count()

@@ -21,6 +21,7 @@ class GoalStatus(str, Enum):
 
 
 PositiveFloat = Annotated[float, Field(gt=0)]
+NonNegativeFloat = Annotated[float, Field(ge=0)]
 WeightKg = Annotated[float, Field(gt=0, le=300)]
 
 
@@ -50,14 +51,14 @@ class GoalBase(BaseModel):
 # ----------------------------
 
 class GoalCreate(GoalBase):
-    starting_value: Optional[PositiveFloat] = None
+    starting_value: Optional[NonNegativeFloat] = None
 
 # ----------------------------
 # Goal Progress Update
 # ----------------------------
 
 class GoalProgressUpdate(BaseModel):
-    current_value: PositiveFloat
+    current_value: NonNegativeFloat
 
 
 # ----------------------------
