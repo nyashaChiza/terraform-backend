@@ -16,6 +16,7 @@ from app.api import (
     planner,
     exercise,
     admin,
+    stats,
     )
 
 # -------------------------------------------------
@@ -91,5 +92,6 @@ app.include_router(goals.router, prefix="/api/goals")
 app.include_router(sessions.router, prefix="/api/sessions")
 app.include_router(exercise.router, prefix="/api/exercises")
 app.include_router(planner.router, prefix="/api/planner")
+app.include_router(stats.router, prefix="/api/stats")
 
 # -------------------------------------------------
