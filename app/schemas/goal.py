@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional, List
 from typing_extensions import Annotated
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from enum import Enum
 
 
@@ -88,7 +88,28 @@ class GoalOut(GoalBase):
     created: datetime
     updated: datetime
 
+    # Session-count progress — target_sessions intentionally omitted
+    completed_sessions: int = 0
+    progress_pct: float = 0.0
+
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="before")
+    @classmethod
+    def compute_progress_pct(cls, data):
+        """
+        Derive progress_pct from the ORM object before Pydantic processes it.
+        target_sessions is read here but never included in the output schema.
+        """
+        if hasattr(data, "__dict__"):
+            # ORM instance
+            completed = getattr(data, "completed_sessions", 0) or 0
+            target    = getattr(data, "target_sessions", None)
+            if target and target > 0:
+                data.__dict__["progress_pct"] = round(min(completed / target * 100, 100), 1)
+            else:
+                data.__dict__["progress_pct"] = 0.0
+        return data
 
 # ----------------------------
 # Goal Update

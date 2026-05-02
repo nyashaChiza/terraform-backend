@@ -4,6 +4,7 @@ from typing import List
 from app.core.config import Settings
 from app.models.goal import Goal
 from app.models.enums import GoalStatus
+from app.services.session_estimator import estimate_sessions
 
 settings = Settings()
 
@@ -22,7 +23,8 @@ class GoalService:
         target_value: float | None,
         start_date,
         due_date,
-        starting_value: float | None = None
+        starting_value: float | None = None,
+        profile=None,
     ) -> Goal:
 
         # Enforce single active goal
@@ -47,12 +49,22 @@ class GoalService:
             current_value=initial,
             start_date=start_date,
             due_date=due_date,
-            status=GoalStatus.Active
+            status=GoalStatus.Active,
+            completed_sessions=0,
         )
 
         db.add(goal)
         db.commit()
         db.refresh(goal)
+
+        # Ask Gemini how many sessions this goal will take (stored, never shown)
+        try:
+            goal.target_sessions = estimate_sessions(goal=goal, profile=profile)
+            db.commit()
+            db.refresh(goal)
+        except Exception:
+            pass  # Non-fatal: progress will show 0% until sessions complete
+
         return goal
 
     @staticmethod

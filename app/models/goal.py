@@ -19,6 +19,11 @@ class Goal(Base):
     start_date = Column(DateTime)
     due_date = Column(DateTime)
     status = Column(Enum(GoalStatus), default=GoalStatus.Active)
+
+    # Session-count progress (target_sessions is never exposed to the client)
+    target_sessions = Column(Integer, nullable=True)
+    completed_sessions = Column(Integer, default=0, nullable=False)
+
     created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

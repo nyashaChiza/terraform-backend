@@ -3,12 +3,13 @@ from sqlalchemy.exc import NoResultFound
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from app.models.enums import SessionStatus
+from app.models.enums import SessionStatus, GoalStatus
 from app.models.session import (
     Session as SessionModel,
     SessionExercise,
     SessionFeedback,
 )
+from app.models.goal import Goal
 from app.services.progress_service import auto_update_goal_progress
 
 
@@ -152,6 +153,20 @@ class SessionService:
         session.completed_at = datetime.utcnow()
         db.commit()
         db.refresh(session)
+
+        # Increment the completed_sessions counter on the user's active goal
+        active_goal: Goal | None = (
+            db.query(Goal)
+            .filter(
+                Goal.user_id == session.user_id,
+                Goal.status == GoalStatus.Active,
+            )
+            .first()
+        )
+        if active_goal is not None:
+            active_goal.completed_sessions = (active_goal.completed_sessions or 0) + 1
+            db.commit()
+
         return session
 
     # ========================

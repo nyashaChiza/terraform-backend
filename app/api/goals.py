@@ -38,6 +38,7 @@ def create_goal(
             start_date=goal_in.start_date,
             due_date=goal_in.due_date,
             starting_value=goal_in.starting_value,
+            profile=profile,
         )
     except ValueError as e:
         raise HTTPException(
