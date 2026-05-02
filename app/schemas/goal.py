@@ -89,7 +89,7 @@ class GoalOut(GoalBase):
     updated: datetime
 
     # Session-count progress — target_sessions intentionally omitted
-    completed_sessions: int = 0
+    completed_sessions: Optional[int] = 0   # Optional handles NULL in legacy DB rows
     progress_pct: float = 0.0
 
     model_config = {"from_attributes": True}

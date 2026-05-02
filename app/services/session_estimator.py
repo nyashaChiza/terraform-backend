@@ -18,7 +18,8 @@ from app.core.config import Settings
 settings = Settings()
 logger = logging.getLogger(__name__)
 
-_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+# Client is constructed lazily inside estimate_sessions() so a missing
+# GEMINI_API_KEY in the environment never crashes the server on startup.
 
 _PROMPT_TEMPLATE = """
 You are a fitness coach. Given the details below, estimate the total number
@@ -94,7 +95,8 @@ def estimate_sessions(*, goal, profile) -> int:
             sessions_per_week=spw,
         )
 
-        response = _client.models.generate_content(
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = client.models.generate_content(
             model="gemini-2.5-flash-lite",
             contents={"text": prompt},
             config={"temperature": 0},
