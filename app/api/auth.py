@@ -10,6 +10,9 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.photo import ProgressPhoto
 from app.models.exercise import Exercise
+from app.models.goal import Goal
+from app.models.profile import Profile
+from app.models.session import Session as WorkoutSession
 
 
 from app.core.security import (
@@ -149,3 +152,35 @@ def change_password(
     current_user.password = hash_password(payload.new_password)
     db.commit()
     return {"message": "Password updated successfully"}
+
+
+# -------------------------------
+# Delete Account
+# -------------------------------
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Permanently deletes the authenticated user's account and all associated data:
+    progress photos, goals, workout sessions (+ exercises & feedback), profile, and the user record.
+    This action is irreversible.
+    """
+    user_id = current_user.id
+
+    # 1. Progress photos (FK → users.id AND goals.id — must go before goals)
+    db.query(ProgressPhoto).filter(ProgressPhoto.user_id == user_id).delete(synchronize_session=False)
+
+    # 2. Goals (FK → users.id)
+    db.query(Goal).filter(Goal.user_id == user_id).delete(synchronize_session=False)
+
+    # 3. Sessions — DB cascade handles session_exercises + session_feedbacks
+    db.query(WorkoutSession).filter(WorkoutSession.user_id == user_id).delete(synchronize_session=False)
+
+    # 4. Profile (FK → users.id)
+    db.query(Profile).filter(Profile.user_id == user_id).delete(synchronize_session=False)
+
+    # 5. User record
+    db.delete(current_user)
+    db.commit()
