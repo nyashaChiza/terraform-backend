@@ -53,6 +53,32 @@ class UserUpdate(BaseModel):
 
 
 # ----------------------------
+# Password Change (self-service)
+# ----------------------------
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: PasswordStr
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        if v.lower() == v:
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(char.isdigit() for char in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
+
+# ----------------------------
+# Admin Password Reset
+# ----------------------------
+
+class AdminPasswordReset(BaseModel):
+    new_password: str = Field(min_length=6, max_length=50)
+
+
+# ----------------------------
 # User Output (Public / API Safe)
 # ----------------------------
 

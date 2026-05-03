@@ -17,10 +17,11 @@ from app.core.security import (
     hash_password,
     create_access_token,
     create_refresh_token,
-    decode_refresh_token
+    decode_refresh_token,
 )
+from app.core.dependencies import get_current_user
 from app.core.config import get_settings
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, PasswordChange
 
 settings = get_settings()
 router = APIRouter(tags=["Auth"])
@@ -129,3 +130,22 @@ def refresh_token(request: Request, refresh_token: str = Form(...), db: Session 
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+
+# -------------------------------
+# Change Password (self-service)
+# -------------------------------
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+def change_password(
+    payload: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not verify_password(payload.current_password, current_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    current_user.password = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
