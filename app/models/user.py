@@ -12,6 +12,8 @@ class User(Base):
     username = Column(String(255), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
+    profile_picture_url = Column(String(500), nullable=True)
+    is_discoverable = Column(Boolean, default=True, nullable=False)
     created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_admin = Column(Boolean, default=False)

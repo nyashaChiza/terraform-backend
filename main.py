@@ -21,6 +21,11 @@ from app.api import (
     exercise,
     admin,
     stats,
+    users,
+    equipment,
+    friends,
+    feed,
+    notifications,
     )
 
 # -------------------------------------------------
@@ -89,6 +94,101 @@ def _backfill_target_sessions() -> None:
         db.close()
 
 
+def _run_column_migrations() -> None:
+    """
+    Lightweight column-level migrations for fields added after initial deployment.
+    Uses IF NOT EXISTS so it is safe to run on every startup.
+
+    SQLite note: create_all() already builds the full schema from ORM models, so
+    raw SQL migrations (which use PostgreSQL-specific syntax) are skipped for SQLite.
+    Only PostgreSQL (Neon / Vercel) needs these ALTER TABLE statements to patch
+    existing tables that predate a given feature.
+    """
+    from sqlalchemy import text
+    from app.db.session import SessionLocal, DATABASE_URL
+
+    # SQLite gets its entire schema from Base.metadata.create_all — skip raw SQL.
+    if DATABASE_URL.startswith("sqlite"):
+        _settings.logger.info("SQLite detected — skipping raw SQL migrations (create_all handles schema).")
+        return
+
+    # PostgreSQL-only migrations — safe to re-run (IF NOT EXISTS / column-exists errors
+    # are caught and logged as warnings, then execution continues with the next statement).
+    migrations = [
+        # ── original columns ──────────────────────────────────────────────────
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture_url VARCHAR(500)",
+        # ── username / discoverability (Friends feature) ──────────────────────
+        # Add as nullable first so existing rows aren't rejected; app always sets
+        # a generated username on new registrations.
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_discoverable BOOLEAN NOT NULL DEFAULT TRUE",
+        # ── Equipment feature ─────────────────────────────────────────────────
+        """
+        CREATE TABLE IF NOT EXISTS equipment (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            category VARCHAR(50) NOT NULL,
+            is_bodyweight BOOLEAN NOT NULL DEFAULT FALSE,
+            created TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS user_equipment (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            equipment_id INTEGER NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            UNIQUE(user_id, equipment_id)
+        )
+        """,
+        "ALTER TABLE exercises ADD COLUMN IF NOT EXISTS equipment_category VARCHAR(50)",
+        # ── Friends & Activity Feed feature ───────────────────────────────────
+        """
+        CREATE TABLE IF NOT EXISTS friendships (
+            id SERIAL PRIMARY KEY,
+            requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            UNIQUE(requester_id, addressee_id)
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS session_reactions (
+            id SERIAL PRIMARY KEY,
+            session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+            reactor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            emoji VARCHAR(10) NOT NULL DEFAULT '💪',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            UNIQUE(session_id, reactor_id)
+        )
+        """,
+        # ── Notifications feature ─────────────────────────────────────────────
+        """
+        CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            type VARCHAR(50) NOT NULL,
+            actor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            meta JSONB,
+            is_read BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+        """,
+    ]
+    for stmt in migrations:
+        db = SessionLocal()
+        try:
+            db.execute(text(stmt))
+            db.commit()
+        except Exception as exc:
+            db.rollback()
+            _settings.logger.warning(f"Migration skipped/warned: {exc}")
+        finally:
+            db.close()
+
+
 @app.on_event("startup")
 def on_startup():
     """
@@ -96,6 +196,17 @@ def on_startup():
     In production, this should be replaced by Alembic migrations.
     """
     Base.metadata.create_all(bind=engine)
+    _run_column_migrations()
+
+    # Seed reference data
+    from app.db.session import SessionLocal
+    from app.db.seed import seed_exercises, seed_equipment
+    db = SessionLocal()
+    try:
+        seed_exercises(db)
+        seed_equipment(db)
+    finally:
+        db.close()
 
     # Backfill target_sessions for any goals that predate the feature
     threading.Thread(target=_backfill_target_sessions, daemon=True).start()
@@ -122,13 +233,18 @@ def root():
 
 # -------------------------------------------------
 # API ROUTERS
-app.include_router(admin.router, prefix="/api/admin")
-app.include_router(auth.router, prefix="/auth")
+app.include_router(admin.router,    prefix="/api/admin")
+app.include_router(auth.router,     prefix="/auth")
 app.include_router(profiles.router, prefix="/api/profiles")
-app.include_router(goals.router, prefix="/api/goals")
+app.include_router(goals.router,    prefix="/api/goals")
 app.include_router(sessions.router, prefix="/api/sessions")
 app.include_router(exercise.router, prefix="/api/exercises")
-app.include_router(planner.router, prefix="/api/planner")
-app.include_router(stats.router, prefix="/api/stats")
+app.include_router(planner.router,  prefix="/api/planner")
+app.include_router(stats.router,    prefix="/api/stats")
+app.include_router(users.router,         prefix="/api/users")
+app.include_router(equipment.router,     prefix="/api/equipment")
+app.include_router(friends.router,       prefix="/api/friends")
+app.include_router(feed.router,          prefix="/api/feed")
+app.include_router(notifications.router, prefix="/api/notifications")
 
 # -------------------------------------------------

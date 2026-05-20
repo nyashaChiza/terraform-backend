@@ -51,3 +51,20 @@ class SessionStatus(str, enum.Enum):
     PLANNED = "PLANNED"
     STARTED = "STARTED"
     COMPLETED = "COMPLETED"
+
+class EquipmentCategory(str, enum.Enum):
+    machine     = "machine"
+    free_weight = "free_weight"
+    cardio      = "cardio"
+    bodyweight  = "bodyweight"
+    cable       = "cable"
+
+class FriendshipStatus(str, enum.Enum):
+    pending  = "pending"
+    accepted = "accepted"
+    declined = "declined"
+
+class NotificationType(str, enum.Enum):
+    friend_request   = "friend_request"
+    friend_accepted  = "friend_accepted"
+    reaction_received = "reaction_received"

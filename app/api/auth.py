@@ -1,3 +1,5 @@
+import random
+import string
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -30,6 +32,22 @@ settings = get_settings()
 router = APIRouter(tags=["Auth"])
 limiter = Limiter(key_func=get_remote_address)
 
+
+def _generate_username(email: str, db: Session) -> str:
+    """
+    Derive a unique username from the email prefix.
+    e.g. nyasha@gmail.com → 'nyasha'
+    On collision append a short random hex suffix: 'nyasha_4f2'
+    """
+    base = email.split("@")[0].lower()
+    # Strip anything that's not alphanumeric or underscore
+    base = "".join(c if c.isalnum() or c == "_" else "_" for c in base)
+    candidate = base
+    while db.query(User).filter(User.username == candidate).first():
+        suffix = "".join(random.choices(string.hexdigits[:16], k=3)).lower()
+        candidate = f"{base}_{suffix}"
+    return candidate
+
 # -------------------------------
 # Register
 # -------------------------------
@@ -45,7 +63,7 @@ def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db
 
     user = User(
         email=user_in.email,
-        username=user_in.email,
+        username=_generate_username(user_in.email, db),
         password=hash_password(user_in.password)
     )
 
@@ -65,7 +83,8 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.username == form_data.username).first()
+    # Login is always by email — form_data.username contains the email address
+    user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

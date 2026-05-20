@@ -23,6 +23,7 @@ class PlannerService:
         user: User,
         goal: Dict,
         exercise_catalog: List[Dict],
+        available_equipment_categories: Optional[List[str]] = None,
     ) -> SessionModel:
         """
         1. Fetch user's previous sessions and last session feedback
@@ -81,7 +82,8 @@ class PlannerService:
             previous_sessions=previous_sessions,
             previous_two_sessions=previous_two_sessions,
             last_session_feedback=last_feedback,
-            exercise_catalog=exercise_catalog
+            exercise_catalog=exercise_catalog,
+            available_equipment_categories=available_equipment_categories,
         )
 
         # Persist the planned session

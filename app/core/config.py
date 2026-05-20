@@ -34,9 +34,11 @@ class Settings():
     #------------------------------
 
     # -----------------------------
-    # FILE STORAGE (for photos later)
+    # FILE STORAGE — Cloudinary
     # -----------------------------
-    MEDIA_BUCKET: str | None = None
+    CLOUDINARY_CLOUD_NAME: str = config("CLOUDINARY_CLOUD_NAME", default="")
+    CLOUDINARY_API_KEY: str    = config("CLOUDINARY_API_KEY",    default="")
+    CLOUDINARY_API_SECRET: str = config("CLOUDINARY_API_SECRET", default="")
 
     class Config:
         env_file = ".env"

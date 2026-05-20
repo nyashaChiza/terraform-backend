@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, DateTime, Enum, JSON
 )
 from sqlalchemy.orm import  relationship
-from app.models.enums import MuscleGroup, StressLevel
+from app.models.enums import MuscleGroup, StressLevel, EquipmentCategory
 from datetime import datetime
 from app.db.base import Base
 
@@ -14,6 +14,7 @@ class Exercise(Base):
     primary_muscle = Column(Enum(MuscleGroup))
     secondary_muscles = Column(JSON)  # list of muscles
     stress_level = Column(Enum(StressLevel))
+    equipment_category = Column(Enum(EquipmentCategory), nullable=True)
     created = Column(DateTime, default=datetime.utcnow)
     updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

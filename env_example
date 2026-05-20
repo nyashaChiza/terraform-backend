@@ -10,6 +10,11 @@ OPENAI_API_KEY=
 OPENROUTER_API_KEY=
 ADMIN_ACTION_KEY=
 
+# Cloudinary — get these from your Cloudinary dashboard > Settings > API Keys
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
 
 postgresql+psycopg2://neondb_owner:npg_gKkacZm3I9UJ@ep-delicate-fog-ahn9yl29-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
 postgresql+psycopg2://postgres.arkdcunbupfznbymiaxm:FOOW5n2xqd92nQeE@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require

@@ -9,6 +9,7 @@ def build_prompt_lite(
     previous_two_sessions: list[dict],
     last_session_feedback: dict,
     exercise_catalog: list[dict],
+    available_equipment_categories: list[str] | None = None,
 ) -> str:
     lite_sessions = [
         {
@@ -47,7 +48,8 @@ def build_prompt_lite(
         f"\"previous_sessions_count\":{previous_sessions_count}}}\n"
         f"PREVIOUS_SESSIONS: {json.dumps(lite_sessions, separators=(',', ':'))}\n"
         f"LAST_FEEDBACK: {json.dumps(lite_feedback, separators=(',', ':'))}\n"
-        f"AVAILABLE_EXERCISES: {json.dumps(lite_exercises, separators=(',', ':'))}\n\n"
+        f"AVAILABLE_EXERCISES: {json.dumps(lite_exercises, separators=(',', ':'))}\n"
+        f"AVAILABLE_EQUIPMENT_CATEGORIES: {json.dumps(available_equipment_categories or ['bodyweight'], separators=(',', ':'))}\n\n"
         "STRICT RULES (DO NOT BREAK):\n"
         "- Output MUST be raw JSON, no markdown, no code blocks\n"
         "- Use ONLY exercises from AVAILABLE_EXERCISES\n"

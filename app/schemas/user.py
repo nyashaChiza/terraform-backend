@@ -85,9 +85,29 @@ class AdminPasswordReset(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
+    username: str
+    profile_picture_url: Optional[str] = None
+    is_discoverable: bool = True
     created: datetime
     updated: datetime
 
     model_config = {
         "from_attributes": True
     }
+
+
+class UsernameUpdate(BaseModel):
+    username: str = Field(min_length=2, max_length=30, pattern=r"^[a-zA-Z0-9_]+$")
+
+
+class DiscoverabilityUpdate(BaseModel):
+    is_discoverable: bool
+
+
+class PublicUserOut(BaseModel):
+    """Minimal public profile for discovery / friend lists."""
+    id: int
+    username: str
+    profile_picture_url: Optional[str] = None
+
+    model_config = {"from_attributes": True}

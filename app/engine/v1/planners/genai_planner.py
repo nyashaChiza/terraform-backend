@@ -38,6 +38,7 @@ def generate_next_session_genai(
     previous_two_sessions: List[dict],
     last_session_feedback: dict,
     exercise_catalog: List[dict],
+    available_equipment_categories: List[str] | None = None,
 ) -> PlannedSessionAI:
     """
     Generates the next workout session using OpenAI, enforces business rules,
@@ -58,6 +59,7 @@ def generate_next_session_genai(
         previous_two_sessions=previous_two_sessions,
         last_session_feedback=last_session_feedback,
         exercise_catalog=exercise_catalog,
+        available_equipment_categories=available_equipment_categories,
     )
 
 
