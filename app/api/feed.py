@@ -56,15 +56,25 @@ def get_feed(
         .all()
     )
 
+    if not sessions:
+        return []
+
+    # Single query for ALL reactions across ALL sessions, then group in Python.
+    # Was previously N+1 — one query per session.
+    session_ids = [s.id for s in sessions]
+    all_reactions = (
+        db.query(SessionReaction)
+        .options(joinedload(SessionReaction.reactor))
+        .filter(SessionReaction.session_id.in_(session_ids))
+        .all()
+    )
+    reactions_by_session: dict[int, list[SessionReaction]] = {}
+    for r in all_reactions:
+        reactions_by_session.setdefault(r.session_id, []).append(r)
+
     result = []
     for s in sessions:
-        # Fetch all reactions for this session (eager-load reactor to avoid N+1)
-        reactions_rows = (
-            db.query(SessionReaction)
-            .options(joinedload(SessionReaction.reactor))
-            .filter(SessionReaction.session_id == s.id)
-            .all()
-        )
+        reactions_rows = reactions_by_session.get(s.id, [])
         my_reaction = next(
             (r.emoji for r in reactions_rows if r.reactor_id == current_user.id), None
         )

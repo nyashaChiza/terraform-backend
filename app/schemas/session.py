@@ -79,7 +79,8 @@ class LoggedSessionOut(BaseModel):
 class SessionExerciseCreate(BaseModel):
     exercise_id: PositiveInt
     sets: Annotated[int, Field(gt=0, le=20)]
-    reps: Annotated[int, Field(gt=0, le=100)]
+    # `reps` doubles as duration in seconds for timed exercises (planks, etc.)
+    reps: Annotated[int, Field(gt=0, le=300)]
     weight: Optional[WeightKg] = None
     rest_seconds: Optional[RestSeconds] = None
 

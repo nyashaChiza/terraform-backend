@@ -9,9 +9,11 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.db.session import engine
 from app.db.base import Base
-from app.core.config import Settings
+from app.core.config import get_settings
 
-_settings = Settings()
+# Use the cached singleton — also triggers validate_production() which
+# refuses to start in production with placeholder secrets.
+_settings = get_settings()
 from app.api import (
     auth,
     profiles,
@@ -52,10 +54,13 @@ app.add_middleware(SlowAPIMiddleware)
 # CORS (Expo / Mobile Friendly)
 # -------------------------------------------------
 
+_cors_origins = _settings.cors_origins_list
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten in production
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    # `*` + credentials is invalid CORS — browsers reject it. Only allow
+    # credentials when origins are explicitly listed.
+    allow_credentials=_cors_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -122,6 +127,8 @@ def _run_column_migrations() -> None:
         # a generated username on new registrations.
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(255)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_discoverable BOOLEAN NOT NULL DEFAULT TRUE",
+        # ── token_version (security: invalidate JWTs on password change / logout) ─
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0",
         # ── Equipment feature ─────────────────────────────────────────────────
         """
         CREATE TABLE IF NOT EXISTS equipment (
@@ -177,16 +184,20 @@ def _run_column_migrations() -> None:
         )
         """,
     ]
-    for stmt in migrations:
-        db = SessionLocal()
-        try:
-            db.execute(text(stmt))
-            db.commit()
-        except Exception as exc:
-            db.rollback()
-            _settings.logger.warning(f"Migration skipped/warned: {exc}")
-        finally:
-            db.close()
+    # Single session for all migrations — was creating a new one per statement.
+    # If one statement fails (e.g. column already exists with different default)
+    # we roll back THAT statement and continue with the rest.
+    db = SessionLocal()
+    try:
+        for stmt in migrations:
+            try:
+                db.execute(text(stmt))
+                db.commit()
+            except Exception as exc:
+                db.rollback()
+                _settings.logger.warning(f"Migration skipped/warned: {exc}")
+    finally:
+        db.close()
 
 
 @app.on_event("startup")
@@ -232,19 +243,28 @@ def root():
     }
 
 # -------------------------------------------------
-# API ROUTERS
-app.include_router(admin.router,    prefix="/api/admin")
-app.include_router(auth.router,     prefix="/auth")
-app.include_router(profiles.router, prefix="/api/profiles")
-app.include_router(goals.router,    prefix="/api/goals")
-app.include_router(sessions.router, prefix="/api/sessions")
-app.include_router(exercise.router, prefix="/api/exercises")
-app.include_router(planner.router,  prefix="/api/planner")
-app.include_router(stats.router,    prefix="/api/stats")
-app.include_router(users.router,         prefix="/api/users")
-app.include_router(equipment.router,     prefix="/api/equipment")
-app.include_router(friends.router,       prefix="/api/friends")
-app.include_router(feed.router,          prefix="/api/feed")
-app.include_router(notifications.router, prefix="/api/notifications")
+# API ROUTERS — versioned under /api/v1/
+# Each resource also gets a legacy `/api/...` alias so existing app installs
+# don't break the moment we deploy. Remove the legacy aliases once the
+# minimum-supported app version is on v1.
+
+def _mount(router, suffix: str):
+    """Register a router at both /api/v1/<suffix> and /api/<suffix> (legacy)."""
+    app.include_router(router, prefix=f"/api/v1/{suffix.lstrip('/')}")
+    app.include_router(router, prefix=f"/api/{suffix.lstrip('/')}", include_in_schema=False)
+
+app.include_router(auth.router, prefix="/auth")  # auth keeps top-level path
+_mount(admin.router,         "admin")
+_mount(profiles.router,      "profiles")
+_mount(goals.router,         "goals")
+_mount(sessions.router,      "sessions")
+_mount(exercise.router,      "exercises")
+_mount(planner.router,       "planner")
+_mount(stats.router,         "stats")
+_mount(users.router,         "users")
+_mount(equipment.router,     "equipment")
+_mount(friends.router,       "friends")
+_mount(feed.router,          "feed")
+_mount(notifications.router, "notifications")
 
 # -------------------------------------------------

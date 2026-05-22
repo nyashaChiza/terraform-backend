@@ -1,29 +1,33 @@
 import enum
 
 # ----- ENUMS -----
-class Gender(enum.Enum):
+# ALL enums inherit from `str` so Pydantic v2 can serialize them to JSON
+# without explicit converters. Plain `enum.Enum` members are NOT strings and
+# silently fail validation when used in response models that expect `str`.
+
+class Gender(str, enum.Enum):
     Male = "Male"
     Female = "Female"
 
-class ExperienceLevel(enum.Enum):
+class ExperienceLevel(str, enum.Enum):
     Beginner = "Beginner"
     Intermediate = "Intermediate"
     Expert = "Expert"
 
-class GoalType(enum.Enum):
+class GoalType(str, enum.Enum):
     WeightLoss = "WeightLoss"
     MuscleGain = "MuscleGain"
     Endurance = "Endurance"
     Strength = "Strength"
     Custom = "Custom"
 
-class GoalStatus(enum.Enum):
+class GoalStatus(str, enum.Enum):
     Active = "Active"
     Paused = "Paused"
     Completed = "Completed"
     Abandoned = "Abandoned"
 
-class MuscleGroup(enum.Enum):
+class MuscleGroup(str, enum.Enum):
     Chest = "Chest"
     Back = "Back"
     Arms = "Arms"
@@ -31,17 +35,17 @@ class MuscleGroup(enum.Enum):
     Legs = "Legs"
     Core = "Core"
 
-class StressLevel(enum.Enum):
+class StressLevel(str, enum.Enum):
     Low = "Low"
     Medium = "Medium"
     High = "High"
 
-class PhotoType(enum.Enum):
+class PhotoType(str, enum.Enum):
     Before = "Before"
     Progress = "Progress"
     After = "After"
 
-class IntensityLevel(enum.Enum):
+class IntensityLevel(str, enum.Enum):
     Deload = "Deload"
     Normal = "Normal"
     Progression = "Progression"

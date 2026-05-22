@@ -7,7 +7,9 @@ class PlannedExercise(BaseModel):
     name: str
     muscle_group: str
     sets: int = Field(gt=0, le=10)
-    reps: int = Field(gt=0, le=50)
+    # `reps` doubles as duration in seconds for timed exercises (planks, holds,
+    # carries, etc.) — so allow up to 300 (5 minutes) instead of capping at 50.
+    reps: int = Field(gt=0, le=300)
     rest_seconds: int = Field(ge=0, le=300)
     notes: Optional[str] = None
     suggested_weight_kg: Optional[float] = None

@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from app.models.session import  Session as SessionModel
 from app.models.user import User
 from app.models.session import SessionFeedback
+from app.models.enums import IntensityLevel
 from app.engine.v1.planners.openai_planner import generate_next_session_open_ai
-from app.engine.v1.planners.open_router_planner import generate_next_session_openrouter 
-from app.engine.v1.planners.genai_planner import generate_next_session_genai 
+from app.engine.v1.planners.open_router_planner import generate_next_session_openrouter
+from app.engine.v1.planners.genai_planner import generate_next_session_genai
 from app.engine.v1.schemas.schemas import PlannedSessionAI
 
 
@@ -86,15 +87,24 @@ class PlannerService:
             available_equipment_categories=available_equipment_categories,
         )
 
+        # Convert AI's free-text intensity into a valid enum.
+        # The AI sometimes returns lowercase, different casing, or values outside
+        # our three allowed levels — fall back to Normal in those cases.
+        raw_intensity = (ai_plan.intensity or "Normal").strip().capitalize()
+        try:
+            intensity_enum = IntensityLevel(raw_intensity)
+        except ValueError:
+            intensity_enum = IntensityLevel.Normal
+
         # Persist the planned session
         planned = SessionModel(
             title=ai_plan.title,
             user_id=user.id,
             estimated_duration_minutes=ai_plan.estimated_duration_minutes,
             plan_payload=ai_plan.model_dump(),
-            summary=ai_plan.summary,
-            goal_progress_feedback=ai_plan.goal_progress_feedback,
-            intensity=ai_plan.intensity.capitalize()
+            summary=ai_plan.summary or "",
+            goal_progress_feedback=ai_plan.goal_progress_feedback or "",
+            intensity=intensity_enum,
         )
 
         db.add(planned)

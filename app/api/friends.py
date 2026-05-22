@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.friendship import Friendship
 from app.models.enums import FriendshipStatus, NotificationType
 from app.schemas.user import PublicUserOut
-from app.schemas.friendship import FriendshipOut, FriendRequestIn
+from app.schemas.friendship import FriendshipOut, FriendRequestIn, IncomingRequestOut
 from app.core.notifications import create_notification
 
 router = APIRouter(tags=["Friends"])
@@ -167,7 +167,7 @@ def get_friends(
     return friends
 
 
-@router.get("/requests/incoming", response_model=List[dict])
+@router.get("/requests/incoming", response_model=List[IncomingRequestOut], response_model_by_alias=True)
 def get_incoming_requests(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -183,15 +183,11 @@ def get_incoming_requests(
         .all()
     )
     return [
-        {
-            "friendship_id": r.id,
-            "from": {
-                "id": r.requester.id,
-                "username": r.requester.username,
-                "profile_picture_url": r.requester.profile_picture_url,
-            },
-            "created_at": r.created_at,
-        }
+        IncomingRequestOut(
+            friendship_id=r.id,
+            from_user=r.requester,
+            created_at=r.created_at,
+        )
         for r in rows
     ]
 

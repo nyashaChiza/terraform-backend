@@ -119,10 +119,14 @@ def search_users(
     Search for discoverable users by username prefix.
     Returns up to 20 results, excluding the calling user.
     """
+    # Escape SQL LIKE wildcards (% and _) and the escape char itself so a user
+    # searching for "%" doesn't match every username. SQLAlchemy params the
+    # value safely against injection, but the wildcards themselves still apply.
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     results = (
         db.query(User)
         .filter(
-            User.username.ilike(f"{q}%"),
+            User.username.ilike(f"{escaped}%", escape="\\"),
             User.is_discoverable == True,
             User.id != current_user.id,
         )

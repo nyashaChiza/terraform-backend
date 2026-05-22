@@ -11,8 +11,9 @@ from app.models.enums import SessionStatus, EquipmentCategory
 from app.schemas.session import PlannedSessionOut
 from app.core.dependencies import get_current_user
 from app.services.planner_service import PlannerService
+from app.core.config import Settings
 
-
+_settings = Settings()
 router = APIRouter(tags=["Planner"])
 
 
@@ -67,13 +68,15 @@ def generate_new_plan(
     else:
         exercise_pool = all_exercises
 
+    # Keep the catalog tight — every field is sent to Gemini as input tokens.
+    # Only include what the prompt actually uses (id, name, primary_muscle).
+    # `stress_level` and `equipment_category` were sent but never referenced
+    # in the prompt; dropping them saves ~30% of catalog tokens.
     exercise_catalog: List[Dict] = [
         {
             "exercise_id": e.id,
             "name": e.name,
             "primary_muscle": e.primary_muscle.value,
-            "stress_level": e.stress_level.value,
-            "equipment_category": e.equipment_category.value if e.equipment_category else "bodyweight",
         }
         for e in exercise_pool
     ]
@@ -114,7 +117,20 @@ def generate_new_plan(
             exercise_catalog=exercise_catalog,
             available_equipment_categories=[c.value for c in selected_categories],
         )
+    except HTTPException:
+        raise
     except Exception as e:
+        # loguru uses `{}` formatting, not `%s` — and prefers `.exception()` to
+        # capture the traceback automatically.
+        _settings.logger.exception(
+            f"Planner failed for user {current_user.id}: {e}"
+        )
+        # Roll back any partial transaction so the next request starts clean
+        # (otherwise a half-committed session can poison subsequent attempts).
+        try:
+            db.rollback()
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate plan: {str(e)}",

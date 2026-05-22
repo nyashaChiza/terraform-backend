@@ -64,15 +64,21 @@ def generate_next_session_genai(
 
 
     # Call Gemini API
+    # gemini-2.0-flash is typically faster + more latency-consistent than
+    # 2.5-flash-lite for structured-JSON generation tasks like this one.
+    # `response_mime_type=application/json` enforces JSON output server-side,
+    # which lets us drop a lot of the "STRICT RULES" prompt boilerplate
+    # (saving ~100 input tokens AND reducing output retries from the model).
     response = client.models.generate_content(
-    model='gemini-2.5-flash-lite',
-    contents={'text': prompt},
-    config={
-        'temperature': 0,
-        'top_p': 0.95,
-        'top_k': 20,
-    },
-)
+        model='gemini-2.0-flash',
+        contents={'text': prompt},
+        config={
+            'temperature': 0,
+            'top_p': 0.95,
+            'top_k': 20,
+            'response_mime_type': 'application/json',
+        },
+    )
     settings.logger.info("AI response received for next session generation.")
     settings.logger.debug(f"AI Response: {response}")
     try:

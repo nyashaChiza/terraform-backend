@@ -79,6 +79,15 @@ class AdminPasswordReset(BaseModel):
 
 
 # ----------------------------
+# Account Deletion (self-service)
+# ----------------------------
+
+class AccountDelete(BaseModel):
+    """Password confirmation required for self-service deletion."""
+    password: str = Field(min_length=1)
+
+
+# ----------------------------
 # User Output (Public / API Safe)
 # ----------------------------
 
